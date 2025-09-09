@@ -1,0 +1,1 @@
+julia --project=. -i -L ./.julia_config/launchTest.jl
