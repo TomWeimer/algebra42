@@ -1,0 +1,22 @@
+--- ./logs/test2_ndarray/numpy_ndarray.log	2025-09-17 16:15:38
++++ ./logs/test2_ndarray/my_ndarray.log	2025-09-17 16:15:37
+@@ -1 +1,19 @@
+ created at: [20250917_161530]
++scalar
++ dim: 0, total_element: 1, shape: (0,)
++empty
++ dim: 1, total_element: 0, shape: (0,)
++vector
++ dim: 1, total_element: 4, shape: (4,)
++matrix
++ dim: 2, total_element: 6, shape: (2, 3)
++row
++ dim: 2, total_element: 3, shape: (1, 3)
++column
++ dim: 2, total_element: 3, shape: (3, 1)
++array3D 1
++ dim: 3, total_element: 8, shape: (2, 2, 2)
++array3D 2
++ dim: 3, total_element: 24, shape: (4, 3, 2)
++raggedArray
++ dim: 1, total_element: 2, shape: (2,)

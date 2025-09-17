@@ -1,0 +1,2 @@
+created at: [20250917_161530]
+FAIL: tests/test3_indexing/my_indexing.jl - LoadError("/Users/student/Documents/IT/42/matrix42/test/tests/test3_indexing/my_indexing.jl", 50, UndefVarError(:array_4D_1, Main))

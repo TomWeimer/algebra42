@@ -1,0 +1,25 @@
+[MASTER]
+# Ignore unnecessary folders
+ignore=__pycache__,build,dist
+
+[MESSAGES CONTROL]
+# Disable annoying or optional messages
+disable=
+    missing-class-docstring,
+    missing-function-docstring,
+    missing-module-docstring,
+    too-few-public-methods,
+    invalid-name,
+    line-too-long,
+    too-many-arguments,
+    too-many-locals,
+    trailing-whitespace
+
+[FORMAT]
+# Max line length (optional)
+max-line-length=100
+
+[DESIGN]
+# Relax some design warnings
+max-parents=7
+max-attributes=10

@@ -40,7 +40,7 @@ Returns the number of dimensions of a `Shape` object.
 """
 Base.ndims(shape::Shape{N}) where {N} = N
 
-Base.length(shape::Shape{N}) where {N} = length
+Base.length(shape::Shape{N}) where {N} = shape.length
 
 Base.size(shape::Shape{N}) where {N} = shape.dims
 
@@ -155,6 +155,33 @@ function getShape(array)
         return nothing;
     end
 end
+
+
+function getShapeBottomUp(array)
+    # The input can be eiter a collection or a single element
+    
+    # If it is a collection
+    if (isa(array, Collection))
+        # Get shapes of each element
+        dimSubArray = map(getShapeBottomUp, array)
+
+        # If all elements are nothing, we reached the innermost level
+        if all(isnothing, dimSubArray)
+            return (length(array),);
+        elseif all(x -> x == dimSubArray[1], dimSubArray)
+            # Prepend current length to the shape of the inner array
+            return (dimSubArray[1]..., length(array))
+        else
+            throw(DomainError("Jagged array"))
+        end
+    # If it is a single element    
+    else
+        # In this case we return nothing to tell that the last call of this function must
+        # create a tupple of only one element, that is the length of the previous array
+        return nothing;
+    end
+end
+
 
 
 # Iteration
