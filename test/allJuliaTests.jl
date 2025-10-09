@@ -78,6 +78,12 @@ redirect_stdout(devnull) do
     end
 end
 
+redirect_stdout(devnull) do
+    redirect_stderr(devnull) do
+        Pkg.add("Debugger")
+    end
+end
+
 # -------------------- Include test data and utils --------------------
 
 include(TEST_DATA)
@@ -110,16 +116,17 @@ for (i, file) in enumerate(test_files)
     global DEFAULT_LOG_FILE = logfile
     write_log("created at: [$RUN_TIMESTAMP]")
     
-    try
+
+        filename = basename(file)[1:end-3]
+        fn_name = Symbol("run_tests_", filename)
+       
+
         include(file)
 
-        if @isdefined run_tests
-            run_tests(write_log)
+        if @isdefined fn_name
+            getfield(Main, fn_name)(write_log)   # pass println as write_log
         end
-    catch e
-        write_log("FAIL: $file - $e")
-        all_passed = false
-    end
+
 end
 
 # -------------------- Final summary --------------------

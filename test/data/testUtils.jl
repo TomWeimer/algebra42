@@ -224,7 +224,7 @@ function exceptionPassed(f::Function, nb::Int, ExceptionType::Type)
     return passed
 end
 
-function allExceptionPassed(exceptions::Vector{Tuple{Function,DataType}})
+function allExceptionPassed(exceptions::Base.Vector{Tuple{Function,DataType}})
     for (i, tuple) in enumerate(exceptions)
         f, exceptionType = tuple[1], tuple[2]
         exceptionPassed(f, i, exceptionType) || return false
@@ -241,6 +241,7 @@ end
 
 
 
+
 function write_content(ndarray, write_log_fn::Function)
     logShape(ndarray, write_log_fn)
     logByIndex(ndarray, write_log_fn)
@@ -248,44 +249,81 @@ function write_content(ndarray, write_log_fn::Function)
     logBySlices(ndarray, write_log_fn)
 end
 
+
+function write_content(scalar::AbstractFloat, write_log_fn::Function)
+    write_log_fn(string(round(scalar, digits=7)))
+end
+
+function write_content(scalar::Number, write_log_fn::Function)
+    write_log_fn(string(scalar))
+end
+
+
+function write_content(ndarray::NDArray{T, 0}, write_log_fn::Function) where {T}
+    write_log_fn("$(ndarray[()])")
+    logShape(ndarray, write_log_fn)
+end
+
+function write_content(ndarray::AbstractArray{T, 0}, write_log_fn::Function) where {T}
+    write_log_fn("$(ndarray[])")
+    logShape(ndarray, write_log_fn)
+end
+
 function write_content(ndarray::TestDataScalar, write_log_fn::Function)
     write_log_fn("$(ndarray.data)")
 end
 
-function logShape(testData::ShapeData, write_log_fn::Function)
-    toLog = "dim: " * string(testData.dim) * "\ntotal_element: " * string(testData.total_element) * "\nshape: " * string(testData.shape)
+
+logShape(ndarray::AbstractArray, write_log_fn::Function) = logShape(ndims(ndarray), Base.prod(size(ndarray)), size(ndarray), write_log_fn)
+
+logShape(ndarray::NDArray, write_log_fn::Function) = logShape(ndims(ndarray), ndarray.shape.length, size(ndarray), write_log_fn)
+
+logShape(testData::ShapeData, write_log_fn::Function) = logShape(testData.dim, testData.total_element, testData.shape, write_log_fn)
+
+function logShape(dim, total_element, shape, write_log_fn::Function)
+    toLog = "dim: " * string(dim) * "\ntotal_element: " * string(total_element) * "\nshape: " * string(shape)
     write_log_fn(toLog)
 end
 
-function logByIndex(testData, write_log_fn::Function)
-    ranges = ntuple(i -> 1:size(testData.matrix)[i], ndims(testData.matrix))
+
+logByIndex(testData::TestDataArray, write_log_fn::Function) = logByIndex(testData.matrix, write_log_fn)
+
+function logByIndex(array::AbstractArray, write_log_fn::Function)
+    ranges = ntuple(i -> 1:size(array)[i], ndims(array))
     contentByIndex = "index: "
 
     for indices in Iterators.product(ranges...)
-        contentByIndex *= "$(pretty_index(indices)): $(testData.matrix[indices...]), "
+        got = array[indices...]
+        scalar =  typeof(got) <: AbstractFloat ? round(got, digits=7) : got
+        contentByIndex *= "$(pretty_index(indices)): $scalar, "
     end
     write_log_fn(contentByIndex)
 end
 
-function logByIterator(testData, write_log_fn::Function)
+
+logByIterator(testData::TestDataArray, write_log_fn::Function) = logByIterator(testData.matrix, write_log_fn)
+
+function logByIterator(array::AbstractArray, write_log_fn::Function)
     contentByIterator = "iterator: "
-    for got in testData.matrix
-         contentByIterator *= "$got "
+    for got in array
+        s = typeof(got) <: AbstractFloat ? round(got, digits=7) : got
+        contentByIterator *= "$s "
     end
     write_log_fn(contentByIterator)
 end
 
-function logBySlices(testData, write_log_fn::Function)
-    shape = size(testData.matrix)
-    array = testData.matrix
 
- 
+logBySlices(testData::TestDataArray, write_log_fn::Function) = logBySlices(testData.matrix, write_log_fn)
+
+
+function logBySlices(array::AbstractArray, write_log_fn::Function)
+    shape = size(array)
 
     contentBySlices = ""
 
     write_log_fn("slices:")
 
-    for axis in 1:ndims(testData.matrix)
+    for axis in 1:ndims(array)
 
         for idx in CartesianIndices(ntuple(i -> i==axis ? 1 : 1:shape[i], ndims(array)))
 
@@ -298,9 +336,32 @@ function logBySlices(testData, write_log_fn::Function)
     write_log_fn(contentBySlices)
 end
 
-function logSlices(matrix, indices)
+
+
+function round(x; digits::Int)
+    if (x == -0.0)
+        x = 0.0
+    end
+    return Base.round(x, digits=digits) 
+end
+
+function logSlices(matrix::AbstractArray{<:AbstractFloat}, indices)
+    slice_test = matrix[indices...]          # get slice
+    # convert each element to rounded number string
+    slice_str = isempty(slice_test) ? "" : 
+                "[" * join(round.(slice_test, digits=7), ", ") * "]"
+    
+    str = isempty(slice_test) ? 
+          "array[$(pretty_index(indices...))] = []\n" :
+          "array[$(pretty_index(indices...))] = $slice_str\n"
+    
+    return str
+end
+
+function logSlices(matrix::AbstractArray, indices)
     slice_test = matrix[indices...]
-    return isempty(slice_test) ? "array[$(pretty_index(indices...))] = []\n" : "array[$(pretty_index(indices...))] = $slice_test\n"
+    str = isempty(slice_test) ? "array[$(pretty_index(indices...))] = []\n" : "array[$(pretty_index(indices...))] = $slice_test\n"
+    return replace(str, "Any" => "")
 end
 
 end # TestUtils

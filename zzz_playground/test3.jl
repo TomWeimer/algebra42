@@ -125,7 +125,7 @@ end
 
 # 'normal' ndarray
 function verifyNDArray(test, expected)
-    ndarray = NDArray{Int}(test.data);
+    ndarray = ndarray{Int}(test.data);
     passed =  verifyShape(ndarray, expected) && compareArrayContent(ndarray, expected);
     passed ||  println("test: \n", ndarray, "\nexpected: \n", expected)
     return passed
@@ -134,9 +134,9 @@ end
 
 # 'jagged' ndarray
 function verifyJaggedArray(test, expected::Collection)
-    ndarray = NDArray{Any}(test.data);
+    ndarray = ndarray{Any}(test.data);
 
-    f1 = () -> x = NDArray{Int}(test.data);
+    f1 = () -> x = ndarray{Int}(test.data);
     errorThrown = exceptionPassed(f1, 1, DomainError)
     
     return  errorThrown && verifyShape(ndarray, expected) && compareArrayContent(ndarray, expected);
@@ -223,7 +223,7 @@ end
 
 # 'scalar' ndarray
 function slicesOk(test::Number, expected, indices)
-    ndarray = NDArray{Int}(test.data);
+    ndarray = ndarray{Int}(test.data);
     
     f = () -> ndarray[indices...]    
     return exceptionPassed(f, 1, DomainError)
@@ -231,7 +231,7 @@ end
 
 # 'normal' ndarray
 function slicesOk(test, expected, indices)
-    ndarray = NDArray{Int}(test.data);
+    ndarray = ndarray{Int}(test.data);
     sliced = ndarray[indices...]
 
     shapeOk =  verifyShape(ndarray, expected) && compareArrayContent(ndarray, expected);

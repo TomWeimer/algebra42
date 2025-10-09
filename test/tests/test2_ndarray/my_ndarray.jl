@@ -8,79 +8,74 @@ using .TestUtils
 #                                                                                                                                  #
 # ---------------------------------------------------------------------------------------------------------------------------------#
 
+
+function logNDArrayContent(name, ndarray, write_log_fn)
+    write_log_fn("\n" * name)
+    write_content(ndarray, write_log_fn)
+end
+
+
 # empty ndarray:
 
-function testEmptyNDArray(test::NDArrayData)
-    ndarray = NDArray{Int}(test.array)
+function testEmptyNDArray(name, test::NDArrayData, write_log_fn)
+    array = NDArray{Int}(test.array)
+
+    logNDArrayContent(name, array, write_log_fn)
 
     exceptions = [
-        (() -> ndarray[1], DomainError),
-        (() -> ndarray[2], DomainError),
-        (() -> ndarray[1, :], DomainError),
-        (() -> begin
-                for x in ndarray
-                    print(x)
-                end
-            end, DomainError)
+        (() -> array[1], DomainError),
+        (() -> array[2], DomainError),
+        (() -> array[1, :], DomainError)
     ]
 
     # Check iteration
-    nothingHappen = all(x -> false, ndarray)  # will be true if array is empty
-    nothingHappen || println("something happened in iteration")
+    nothingHappen = all(x -> false, array)
 
-    return allExceptionPassed(exceptions) && nothingHappen && verifyShape(ndarray, test)
+    @assert allExceptionPassed(exceptions) && nothingHappen
 end
 
-# scalar:
+# scalar
 
-function testScalarNDArray(test::TestDataScalar)
-    ndarray = NDArray{Int}(test.data)
+function testScalarNDArray(name, test::TestDataScalar, write_log_fn)
+    array = NDArray{Int}(test.data)
+
+    logNDArrayContent(name, array, write_log_fn)
 
     exceptions = [
-        (() -> Base.iterate(ndarray), DomainError),
-        (() -> ndarray[1], DomainError)
+        (() -> Base.iterate(array), DomainError),
+        (() -> array[1], DomainError)
     ]
 
-    contentOK = (ndarray[()] == test.data)
-    contentOK || println("Scalar mismatch: got $(ndarray[()]), expected $(test.data)")
-
-    return allExceptionPassed(exceptions) && verifyShape(ndarray, test) && contentOK
-end
-
-
-# 'normal' ndarray:
-
-function testNDArray(test::NDArrayData)
-    ndarray = NDArray{Int}(test.array)
-    passed = verifyShape(ndarray, test) && compareArrayContent(ndarray, test)
-    passed || println("test: \n", ndarray.content, "\nexpected: \n", test.matrix)
-    return passed
+    @assert allExceptionPassed(exceptions)
 end
 
 
 # 'ragged' ndarray:
 
-function testRaggedArray(test::NDArrayData)
-    ndarray = NDArray{Any}(test.array)
+function testRaggedArray(name, test::NDArrayData, write_log_fn)
 
-    f1 = () -> x = NDArray{Int}(test.data)
+    array = NDArray{Any}(test.array)
+
+    logNDArrayContent(name, array, write_log_fn)
+
+    f1 = () -> x = NDArray{Int}(test.array)
     errorThrown = exceptionPassed(f1, 1, DomainError)
 
-    return errorThrown && verifyShape(ndarray, test) && compareArrayContent(ndarray, test)
+    @assert errorThrown
 end
 
 
-function ndarray_test_set1()
-    printTest("scalar", testScalarNDArray(scalar))
-    printTest("vector", testNDArray(vector_1))
-    printTest("empty", testEmptyNDArray(empty_vector))
-    printTest("matrix 1", testNDArray(matrix_1))
-    printTest("matrix 2", testNDArray(matrix_2))
-    printTest("row", testNDArray(row_matrix))
-    printTest("column", testNDArray(column_matrix))
-    printTest("array3D 1", testNDArray(array_3D_1))
-    printTest("array3D 2", testNDArray(array_3D_2))
-    printTest("raggedArray", testRaggedArray(ragged_array))
+function ndarray_test_set1(write_log_fn)
+    testScalarNDArray("scalar", scalar, write_log_fn)
+    logNDArrayContent("vector", vector_1, write_log_fn)
+    testEmptyNDArray("empty", empty_vector, write_log_fn)
+    logNDArrayContent("matrix 1", matrix_1, write_log_fn)
+    logNDArrayContent("matrix 2", matrix_2,  write_log_fn)
+    logNDArrayContent("row", row_matrix,  write_log_fn)
+    logNDArrayContent("column", column_matrix,  write_log_fn)
+    logNDArrayContent("array3D 1", array_3D_1,  write_log_fn)
+    logNDArrayContent("array3D 2", array_3D_2,  write_log_fn)
+    testRaggedArray("ragged array", ragged_array,  write_log_fn)
 end
 
 
@@ -93,20 +88,18 @@ end
 function testBothFormat(data::NDArrayData)
     format1, format2 = NDArray{Int}(data.array), NDArray{Int}(data.matrix)
     passed = size(format1) == size(format2) && compareByIndex(format1, format2)
-    passed || println("format1: \n", format1, "\format2: \n", format2)
     return passed
 end
 
-function ndarray_test_set2()
-    println("\n Test that both the format used as the input create the same ndarray")
-    printTest("vector", testBothFormat(vector_1))
-    printTest("empty", testBothFormat(empty_vector))
-    printTest("matrix 1", testBothFormat(matrix_1))
-    printTest("matrix 2", testBothFormat(matrix_2))
-    printTest("row", testBothFormat(row_matrix))
-    printTest("column", testBothFormat(column_matrix))
-    printTest("array3D 1", testBothFormat(array_3D_1))
-    printTest("array3D 2", testBothFormat(array_3D_2))
+function ndarray_test_set2(write_log_fn)
+    @assert testBothFormat(vector_1)
+    @assert testBothFormat(empty_vector)
+    @assert testBothFormat(matrix_1)
+    @assert testBothFormat(matrix_2)
+    @assert testBothFormat(row_matrix)
+    @assert testBothFormat(column_matrix)
+    @assert testBothFormat(array_3D_1)
+    @assert testBothFormat(array_3D_2)
 end
 
 # ---------------------------------------------------------------------------------------------------------------------------------#
@@ -117,47 +110,49 @@ end
 
 
 # 'scalar' ndarray
-function testScalarSlices(test::TestDataScalar, indices)
+function testScalarSlices(name, test::TestDataScalar, indices, write_log_fn)
     ndarray = NDArray{Int}(test.data)
+
+    logNDArrayContent(name, ndarray, write_log_fn)
 
     f = () -> ndarray[indices...]
 
-    return exceptionPassed(f, 1, DomainError)
+    @assert exceptionPassed(f, 1, DomainError)
 end
 
 # 'normal' ndarray
 
-function testNDArraySlices(ndarray::NDArray, ndarrayToChange::NDArray, expected, indices)
-    sliced, expectedSliced, slicedToChange = ndarray[indices...], expected[indices...], ndarrayToChange[indices...]
+function testNDArraySlices(name, ndarray::NDArray, ndarrayToChange::NDArray, indices, write_log_fn)
+    sliced, slicedToChange = ndarray[indices...], ndarrayToChange[indices...]
 
-    shapeOk = verifyShape(sliced, expectedSliced)
-    contentOk = comparesSlices(ndarray, expected, indices)
+    logNDArrayContent(name, sliced, write_log_fn)
 
-    isempty(expected) && return shapeOk && contentOk
+    if (isempty(sliced))
+        return
+    end
+
 
     idx1, idx2 = nindexes(ndims(ndarray)), nindexes(ndims(sliced))
     mutableOk = mutateNdArray(slicedToChange, ndarrayToChange, idx1, idx2, 10)
     passByRef = (ndarrayToChange[idx1...] == 10)
 
 
-    shapeOk || println("shape mismatch")
-    contentOk || println("content mismatch")
     mutableOk || println("mutable: ", mutableOk, " should be ", true)
     passByRef || println("passByRef: ", passByRef, " should be ", true)
 
-    return shapeOk && contentOk && mutableOk && passByRef
+    @assert mutableOk && passByRef
 end
 
-function testNDArraySlices(test::NDArrayData, indices)
+function testNDArraySlices(name, test::NDArrayData, indices, write_log_fn)
     ndarray = NDArray{Int}(test.array)
     ndarrayToChange = NDArray{Int}(test.array)
-    return testNDArraySlices(ndarray, ndarrayToChange, test.matrix, indices)
+    return testNDArraySlices(name, ndarray, ndarrayToChange, indices, write_log_fn)
 end
 
-function testRaggedArraySlices(test::NDArrayData, indices)
+function testRaggedArraySlices(name, test::NDArrayData, indices, write_log_fn)
     ndarray = NDArray{Any}(test.array)
     ndarrayToChange = NDArray{Any}(test.array)
-    return testNDArraySlices(ndarray, ndarrayToChange, test.matrix, indices)
+    return testNDArraySlices(name, ndarray, ndarrayToChange, indices, write_log_fn)
 end
 
 
@@ -167,16 +162,15 @@ function mutateNdArray(slicedToChange, ndarrayToChange, idx1, idx2, val)
 end
 
 
-function ndarray_test_set3()
-    printstyled("\n   check slices:\n", bold=false, italic=true)
-    printTest("scalar", testScalarSlices(scalar, (:,)))
-    printTest("vector", testNDArraySlices(vector_1,(:,)))
-    printTest("matrix", testNDArraySlices(matrix_1, (1, :)))
-    printTest("array3D", testNDArraySlices(array_3D_1, (1, 1, :)))
-    printTest("emptyArray", testNDArraySlices(empty_vector, (:,)))
-    printTest("columnVector", testNDArraySlices(column_matrix,  (1, :)))
-    printTest("rowVector", testNDArraySlices(row_matrix,  (1, :)))
-    printTest("raggedArray", testRaggedArraySlices(ragged_array,  (:,)))
+function ndarray_test_set3(write_log_fn)
+    testScalarSlices("scalar", scalar, (:,), write_log_fn)
+    testNDArraySlices("vector", vector_1, (:,), write_log_fn)
+    testNDArraySlices("matrix", matrix_1, (1, :), write_log_fn)
+    testNDArraySlices("array3D", array_3D_1, (1, 1, :), write_log_fn)
+    testNDArraySlices("emptyArray", empty_vector, (:,), write_log_fn)
+    testNDArraySlices("columnVector", column_matrix, (1, :), write_log_fn)
+    testNDArraySlices("rowVector", row_matrix, (1, :), write_log_fn)
+    testRaggedArraySlices("raggedArray", ragged_array, (:,), write_log_fn)
 end
 
 
@@ -186,12 +180,8 @@ end
 #                                                                                                                                  #
 # ---------------------------------------------------------------------------------------------------------------------------------#
 
-function testNdArray()
-    println("NDArray Test: ")
-
-    ndarray_test_set1()
-    ndarray_test_set2()
-    ndarray_test_set3()
+function run_tests_my_ndarray(write_log_fn)
+    ndarray_test_set1(write_log_fn)
+    ndarray_test_set2(write_log_fn)
+    ndarray_test_set3(write_log_fn)
 end
-
-testNdArray()

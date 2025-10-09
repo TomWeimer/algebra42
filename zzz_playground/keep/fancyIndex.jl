@@ -44,7 +44,7 @@ function fancyIndexing(array::NDArray{DType, N}, indices::Tuple{Vector{Bool}} )
     filteredArray = [ val for (i, val) in enumerate(array) if mask[i] == true ]
 
     # Return a new NDArray
-    return NDArray{DType}(filteredArray)
+    return ndarray{DType}(filteredArray)
 end
 
 # Fancy indexing (with only vector)
@@ -60,7 +60,7 @@ function fancyIndexing(original_array::NDArray{DType, N}, indices::Tuple{ Abstra
 
     expandedIndices = expandDimensions( size(original_array), indices )
 
-    output_array = NDArray{DType}(final_shape)
+    output_array = ndarray{DType}(final_shape)
 
     source_grid = CartesianIndices(original_array)[expandedIndices...]
     output_grid = CartesianIndices(output_array)
@@ -89,7 +89,7 @@ function fancyIndexing(original_array::NDArray{DType, N}, indices::Tuple{ Vararg
     
     expandedIndices = expandDimensions( size(original_array), indices )
 
-    output_array = NDArray{DType}(final_shape)
+    output_array = ndarray{DType}(final_shape)
 
     source_grid = CartesianIndices(original_array)[expandedIndices...]
     output_grid = CartesianIndices(output_array)
@@ -195,7 +195,7 @@ function fancyIndexing(original_array::NDArray{DType, N}, indices::Tuple{ Abstra
     
     reducedIndices = reduceIndices(generatedIndices, final_shape,  size(original_array))
 
-    output_array = NDArray{DType}(final_shape)
+    output_array = ndarray{DType}(final_shape)
 
     source_grid = CartesianIndices(final_shape)[reducedIndices...]
     output_grid = CartesianIndices(output_array)
@@ -225,7 +225,7 @@ function fancyIndexing(original_array::NDArray{DType, N}, indices::Tuple{ Abstra
     
     expandedIndices = reduceIndices(generatedIndices, size(original_array), final_shape )
 
-    output_array = NDArray{DType}(final_shape)
+    output_array = ndarray{DType}(final_shape)
 
     source_grid = CartesianIndices(original_array)[expandedIndices...]
     output_grid = CartesianIndices(output_array)
@@ -392,7 +392,7 @@ function fancyIndexing(array::NDArray{DType, N}, masks::NTuple{N, Vector{Int}} )
     verifyFancyIndexing(padded_shapes, max_ndim)
 
     # Step 4: allocate output
-    output = NDArray{DType}(final_shape)
+    output = ndarray{DType}(final_shape)
 
     # Step 5: loop
     for idx in CartesianIndices(final_shape)

@@ -1,0 +1,46 @@
+--- ./logs/test5_subject/julia_subject.log	2025-10-09 18:55:44
++++ ./logs/test5_subject/my_subject.log	2025-10-09 18:55:47
+@@ -355,20 +355,8 @@
+ array[1, :] = [1.0, 0.625, 0.0, 0.0, -12.1666667]
+ array[2, :] = [0.0, 0.0, 1.0, 0.0, -3.6666667]
+ array[3, :] = [0.0, 0.0, 0.0, 1.0, 29.5]
+-
+-
+-determinant 1:
+-0.0
+-
+-determinant 2:
+-8.0
+ 
+-determinant 3:
+--174.0
+ 
+-determinant 4:
+-1032.0
+-
+ inverse 1:
+ dim: 2
+ total_element: 9
+--- ./logs/test5_subject/numpy_subject.log	2025-10-09 18:55:48
++++ ./logs/test5_subject/my_subject.log	2025-10-09 18:55:47
+@@ -355,20 +355,8 @@
+ array[1, :] = [1.0, 0.625, 0.0, 0.0, -12.1666667]
+ array[2, :] = [0.0, 0.0, 1.0, 0.0, -3.6666667]
+ array[3, :] = [0.0, 0.0, 0.0, 1.0, 29.5]
+-
+-
+-determinant 1:
+-0.0
+-
+-determinant 2:
+-8.0
+ 
+-determinant 3:
+--174.0
+ 
+-determinant 4:
+-1032.0
+-
+ inverse 1:
+ dim: 2
+ total_element: 9

@@ -21,7 +21,7 @@ function compare_logs_ignore_patterns(test_log::String, ref_log::String, ignore:
     return true
 end
 
-function log_contains(test_log::String, patterns::Vector{String})::Bool
+function log_contains(test_log::String, patterns::Base.Vector{String})::Bool
     content = read(test_log, String)
     all(occursin(pat, content) for pat in patterns)
 end
@@ -112,8 +112,11 @@ function write_diff(test_log::String, ref_log::String)
     mkpath(dirname(diff_file))
 
     try
+        open(diff_file, "a") do f  # "a" = append mode
+            run(pipeline(`diff -u $ref_log $test_log`, stdout=f))
+        end
         # Run diff and write output to diff_file
-        run(pipeline(`diff -u $ref_log $test_log`, diff_file))
+        #run(pipeline(`diff -u $ref_log $test_log`, diff_file))
     catch e
         # diff exits with nonzero when files differ → ignore
     end

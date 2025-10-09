@@ -1,4 +1,6 @@
-using .MyException
+const Collection = Base.Vector
+
+
 
 """
     Shape{N}
@@ -12,10 +14,10 @@ number of dimensions.
 """
 mutable struct Shape{N}
     length::Int              # size
-    dims::Tuple{Vararg{Int}} # shape
+    dims::NTuple{N, Int} # shape
     
     # Inner constructor for scalars
-    Shape{0}() = new{0}(1, (0,))
+    Shape{0}() = new{0}(1, ())
 
     # Inner constructor for a general Shape from a tuple of dimensions
     function Shape{N}(tuple::NTuple{N, Int}) where {N}
@@ -193,3 +195,49 @@ function Base.iterate(shape::Shape, state)
     state > length(shape.dims) &&  return nothing 
     return shape.dims[state], state + 1
 end
+
+
+# Padded Shape:
+# ------------------
+
+# Structure used when prepending shapes with ones
+struct PaddedShape{OriginalDimension}
+    originalShape::Ref{NTuple{OriginalDimension,Int}}
+    expectedDimension::Ref{Int}
+end
+
+function PaddedShape(originalShape::NTuple{N,Int}, maxDim::Ref{Int}) where {N}
+    # If the max dimension is smaller than the dimension of original shape then update it
+    if (maxDim[] < N)
+        maxDim[] = N
+    end
+    # Return a "view" on the original shape
+    PaddedShape{N}(Ref(originalShape), maxDim)
+end
+
+function PaddedShape(originalArray::AbstractArray{T,N}, maxDim::Ref{Int}) where {T,N}
+    # If the max dimension is smaller than the dimension of the original array then update it
+    if (maxDim[] < N)
+        maxDim[] = N
+    end
+    # Return a "view" on the shape of the array
+    PaddedShape{N}(Ref(size(originalArray)), maxDim)
+end
+
+# Using this function and an offset we mimic a shape prepended with 1 without allocating it
+function Base.getindex(prep_shape::PaddedShape{OriginalDimension}, i::Int) where {OriginalDimension}
+    if (prep_shape.expectedDimension[] == OriginalDimension)
+        return prep_shape.originalShape[][1]
+    else
+        offset = prep_shape.expectedDimension[] - OriginalDimension
+        return (i <= offset) ? 1 : prep_shape.originalShape[][i-offset]
+    end
+end
+
+# Return the original dimension of the shape
+original_dim(padded_shape::PaddedShape{OriginalDimension}) where {OriginalDimension} = OriginalDimension
+
+Base.length(padded_shape::PaddedShape{OriginalDimension}) where {OriginalDimension} = padded_shape.expectedDimension[]
+
+Base.size(padded_shape::PaddedShape{OriginalDimension}) where {OriginalDimension} = ntuple(i -> padded_shape[i], length(padded_shape))
+

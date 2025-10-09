@@ -5,10 +5,20 @@ version = "0.1.0"
 
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+Debugger = "31a5f54b-26ea-5ae9-a837-f05ce5417438"
+GeometryBasics = "5c1252a2-5f33-56bf-86c9-59e7332b4326"
 Infiltrator = "5903a43b-9cc3-4c30-8d17-598619ec4e9b"
+Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+RowEchelon = "af85af4c-bcd5-5d23-b03a-a909639aa875"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [compat]
 BenchmarkTools = "1.6.0"
+Debugger = "0.7.15"
+GeometryBasics = "0.5.10"
 Infiltrator = "1.9.3"
+Interpolations = "0.16.2"
+LinearAlgebra = "1.11.0"
+RowEchelon = "0.2.1"
 Test = "1.11.0"

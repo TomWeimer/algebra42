@@ -55,24 +55,21 @@ for i, file in enumerate(test_files):
     logfile = test_logs[i]
     print(f"Running {file} -> {logfile}")
 
-    try:
-        
-        LOG_FILE = logfile
-        
-        write_log(f"created at: [{RUN_TIMESTAMP}]")
-         
-        # Dynamically load the test module
-        import importlib.util
+    LOG_FILE = logfile
     
-        spec = importlib.util.spec_from_file_location(os.path.basename(file)[:-3], file)
-        mod = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(mod)
+    write_log(f"created at: [{RUN_TIMESTAMP}]")
+        
+    # Dynamically load the test module
+    import importlib.util
 
-        # If the test module defines a function like `run_tests(logfile)` you could call it:
-        if hasattr(mod, "run_tests"):
-            mod.run_tests(write_log)     
-    except Exception as e:
-        all_passed = False
+    spec = importlib.util.spec_from_file_location(os.path.basename(file)[:-3], file)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    # If the test module defines a function like `run_tests(logfile)` you could call it:
+    if hasattr(mod, "run_tests"):
+        mod.run_tests(write_log)     
+    
 
 # Final summary
 if all_passed:

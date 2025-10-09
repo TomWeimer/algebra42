@@ -1,7 +1,6 @@
 module TestData
 
-export ShapeData, NDArrayData, TestDataScalar, TestFancyIndexing, TestDataArray, scalar, vector_1, vector_2, empty_vector, matrix_1, matrix_2, column_matrix, row_matrix, array_3D_1, array_3D_2, ragged_array, allData
-
+export ShapeData, NDArrayData, TestDataScalar, TestFancyIndexing, TestDataArray, scalar, vector_1, vector_2, vector_3, vector_4, vector_5, empty_vector, matrix_1, matrix_2, column_matrix, row_matrix, array_3D_1, array_3D_2, ragged_array, allData, array_4D_1, e1, e2, e3, v1, v2
 abstract type ShapeData end
 
 abstract type NDArrayData <: ShapeData end
@@ -18,7 +17,7 @@ struct TestDataScalar <: NDArrayData
     shape::Tuple
     dim::Int
 
-    TestDataScalar(data::Number) = new(data, 1, (0,), 0)
+    TestDataScalar(data::Number) = new(data, 1, (), 0)
 end
 
 scalar = TestDataScalar(42)
@@ -107,6 +106,17 @@ end
 vector_1 = testVector([1, 2, 3, 4], total_element=4)
 vector_2 = testVector([10, 20, 30, 40, 50], [10, 20, 30, 40, 50],  total_element=5)
 
+vector_3 = testVector([1, 1, 1, 1, 1], [1, 1, 1, 1, 1],  total_element=5)
+vector_4 = testVector([2, 2, 2, 2, 2], [2, 2, 2, 2, 2],  total_element=5)
+vector_5 = testVector([2, 2, 2, 2, 2, 2], [2, 2, 2, 2, 2, 2],  total_element=6)
+
+e1 = testVector([1, 0, 0], [1, 0, 0], total_element=3)
+e2 = testVector([0, 1, 0], [0, 1, 0], total_element=3)
+e3 = testVector([0, 0, 1], [0, 0, 1], total_element=3)
+
+v1 = testVector([1, 2, 3], [1, 2, 3],  total_element=3)
+v2 = testVector([0, 10, -100], [0, 10, -100],  total_element=3)
+
 empty_vector = testVector([], total_element=0)
 
 # matrix:
@@ -171,6 +181,14 @@ allData = [
     ("scalar", scalar),
     ("vector_1", vector_1),
     ("vector_2", vector_2),
+    ("vector_3", vector_3),
+    ("vector_4", vector_4),
+    ("vector_5", vector_5),
+    ("e1", e1),
+    ("e2", e2),
+    ("e3", e3),
+    ("v1", v1),
+    ("v2", v2),
     ("empty_vector", empty_vector),
     ("matrix_1", matrix_1),
     ("matrix_2", matrix_2),
@@ -179,6 +197,7 @@ allData = [
     ("array_3D_1", array_3D_1),
     ("array_3D_2", array_3D_2),
     ("ragged_array", ragged_array)
+    
 ]
 
 # ---------------------------------------------------------------------------------------------------------------------------------#

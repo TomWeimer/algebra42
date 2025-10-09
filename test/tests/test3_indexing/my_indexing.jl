@@ -1,53 +1,68 @@
 using Algebra42
 using .TestData
+using .TestUtils
 
-function test_shape_incompatibility(data::TestDataArray, indices...)
+using Debugger
+
+
+function logIndexing(name, result, write_log_fn)
+    write_log_fn("\n" * name)
+    write_content(result, write_log_fn)
+end
+
+function test_shape_incompatibility(name, data::TestDataArray, write_log_fn, indices...)
     A = NDArray{Int}(data.matrix)
-    got = A[indices...]
 
     passed = false
     try
         tmp = A[indices...]
+        logIndexing(name, tmp, write_log_fn)
     catch e
         passed = e isa DomainError
     end
-    return passed
+    
+    @assert passed
 end
 
-function test_fancy_indexing(data::TestDataArray, indices...)
+function test_fancy_indexing(name, data::TestDataArray, write_log_fn, indices...)
     A = NDArray{Int}(data.matrix)
     got = A[indices...]
-    expected = data.matrix[indices...]
-    return verifyShape(got, expected) && compareArrayContent(got, expected)
+    logIndexing(name, got, write_log_fn)
 end
 
-function test_final_shape()
-    println("Fancy Indexing:")
-    printTest("Int indexing",   test_fancy_indexing(array_4D_1, [0, 1], [0 1 ; 1 0] ) )
-    printTest("Bool mask 1",    test_fancy_indexing(vector_1, [true, false, true, true], [1, 3, 4]) )
-    printTest("Bool mask 2",    test_fancy_indexing(matrix_1, [true, false, true, true, true, false ],  [1, 3, 4]) )
-    printTest("Bool mask 3",    test_fancy_indexing(matrix_1, [false, false, false, false, false, false ] ) )
-    printTest("Bool mask 4",    test_fancy_indexing(array_3D_1, [false, false, false, false, false, false, true, true] ) )
-    printTest("Bool mask 5",    test_fancy_indexing(array_3D_1, [false, false, false, false, false, false, false, false] ) )
-    printTest("Bool indexing",  test_fancy_indexing(array_4D_1, [true false; false true], [false true; true false] ))
-    printTest("Shape invalid",  test_shape_incompatibility(array_4D_1, [0, 1, 2], [0 1; 1 0]))
-    printTest("Mixed indexing 1", test_fancy_indexing(array_4D_1, [true false; true true], [0 1; 1 0]))
-    printTest("Mixed indexing 2", test_fancy_indexing(array_4D_1, [false false; false false], [0 1; 1 0]))
+function run_tests_my_indexing(write_log_fn)
+
+
+# Two 2x2 integer arrays for coordinates
+    # I1 = [1 1; 3 3]
+    # I2 = [1 1; 2 1]
+
+    # multi = Algebra42.new_multi_iter(I1, I2)
+
+    # for (a, b) in multi
+    #     write_log_fn(string(a) * "  " * string(b))
+    # end
+    ndarray1 = NDArray{Int}([1 1; 1 1])
+    ndarray2 = NDArray{Int}([2 2; 2 2])
+
+    ndarray3 = Algebra42.add(ndarray1, ndarray2)
+
+    logIndexing("array: ", ndarray3, write_log_fn)
     
-    printstyled("\n   fancy indexing:\n", bold=false, italic=true)
-    printTest("Bool indexing",      testFancyIndexingBooleanMask(my_1d_array))
-    printTest("empty boolean mask", testFancyIndexingEmptyBooleanMask(my_1d_array))
-    printTest("multi dim",          testFancyIndexingMultiDim(my_2d_array))
-        printTest("multi dim (3d)",     testFancyIndexing3d(my_3d_array))
-    printTest("multi dim (3d)",     testFancyIndexing3d(my_3d_array2))
-    # printTest("mixed and combined",     mixedAndCombinedIndexing(my_3d_array))
-    # printTest("mutability (must copy)",   correctnessAndMutability(my_3d_array))
+    #println("Fancy Indexing:")
+   # test_fancy_indexing("Int indexing", array_4D_1, write_log_fn, [1, 2], [1 2; 2 1])
+    #test_fancy_indexing("Bool mask 1", vector_1, write_log_fn, [true, false, true, true])
+    #test_fancy_indexing("Bool mask 2", matrix_1, write_log_fn, [true false true; true true false])
+    #test_fancy_indexing("Bool mask 3", matrix_1, write_log_fn,  [false false false; false false false])
+    #test_fancy_indexing("Bool mask 4", array_3D_1, write_log_fn,[false, true], [false, true], [false, true])
+    # TODO make possible nested arrray as indices
+    #test_fancy_indexing("Int indexing", array_4D_1, write_log_fn, [0, 1], [[0, 1], [1, 0]])
+    #test_fancy_indexing("Bool mask 5", array_3D_1, write_log_fn, [false, false], [false, false], [false, false])
+    #test_fancy_indexing("Bool indexing", array_4D_1, write_log_fn, [[true, false], [false, true]], [[false, true], [true, false]])
+    #test_shape_incompatibility("Shape invalid", array_4D_1, write_log_fn, [0, 1, 2], [[0, 1], [1, 0]])
+    #test_fancy_indexing("Mixed indexing 1", array_4D_1, write_log_fn, [[true, false], [true, false]], [[0, 1], [0, 1]] )
+    #test_shape_incompatibility("Mixed invalid", array_4D_1, write_log_fn, [[false, false], [false, false]], [[0, 1], [1, 0]])
 end
-
-
-
-
-test_final_shape()
 
 
 
@@ -74,7 +89,7 @@ test_final_shape()
 
 #     row_mask = [true, false, true]
 #     passed1 = compareByIndex(my_2d_array[row_mask, :], [1 2 3; 7 8 9])
-    
+
 #     col_mask = [true, false, true]
 #     passed2 = compareByIndex(my_2d_array[:, col_mask], [1 3; 4 6; 7 9])
 
@@ -85,7 +100,7 @@ test_final_shape()
 #     passed4 = compareByIndex(my_2d_array[:, col_indices], [1 3; 4 6; 7 9])
 
 #     passed5 = compareByIndex(my_2d_array[row_indices, col_indices], [1 3; 7 9])
-    
+
 #     # passed3 = compareByIndex(my_2d_array[[1, 3], [1, 3]], [1 3; 7 9])
 
 #     return passed1 && passed2 && passed3 && passed4 && passed5
@@ -114,7 +129,7 @@ test_final_shape()
 
 #         passed4 =  compareByIndex(my_3d_array[:, dim2_indices, :], [1 5 9 13; 2 6 10 14])
 #         passed4 || println("test4\nexpected: ", [1 5 9 13; 2 6 10 14], " got: ", my_3d_array[:, dim2_indices, :])
-        
+
 #         # --- Indexing on Dimension 3 ---
 #         dim3_mask = [false, true, false, true]
 #         dim3_indices = [2, 4]
@@ -140,10 +155,10 @@ test_final_shape()
 #         if !(passed1 && passed2 && passed3 && passed4 && passed5 && passed6)
 #             println("passsed 1: ", passed1, " passed 2: ", passed2, " passed 3: ", passed3, " passed4: ", passed4, " passed 5: ", passed5, " passed6: ", passed6 )
 #         end
-        
+
 #         return passed1 && passed2 && passed3 && passed4 && passed5 && passed6
 #     end
-    
+
 
 #         #--------------------------------------------------------------------------------------------------------------------------
 
@@ -167,7 +182,7 @@ test_final_shape()
 
 #         return passed1 && passed2 && passed3
 #     end
-    
+
 #     #--------------------------------------------------------------------------------------------------------------------------
 
 #     function correctnessAndMutability(my_3d_array)

@@ -1,6 +1,6 @@
-created at: [20250917_161530]
+created at: [20251009_185524]
 scalar
- dim: 0, total_element: 1, shape: (0,)
+ dim: 0, total_element: 1, shape: ()
 empty
  dim: 1, total_element: 0, shape: (0,)
 vector

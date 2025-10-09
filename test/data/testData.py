@@ -1,8 +1,5 @@
 import numpy as np
 
-
-
-
 class TestDataScalar:
     def __init__(self, data, total_element, shape, dim):
         self.data = data
@@ -11,7 +8,7 @@ class TestDataScalar:
         self.dim = dim
 
 def testScalar(data):
-    return TestDataScalar(data, 1, (0,), 0)
+    return TestDataScalar(data, 1, (), 0)
 
 class TestDataArray:
 
@@ -70,6 +67,19 @@ vector_2 = TestDataArray.fromExpected(
     data=[10, 20, 30, 40, 50], expected=np.array([10, 20, 30, 40, 50]), total_element=5
 )
 
+e1 = TestDataArray.fromExpected(data=[1, 0, 0], expected=np.array([1, 0, 0]), total_element=3)
+
+e2 = TestDataArray.fromExpected(data=[0, 1, 0], expected=np.array([0, 1, 0]), total_element=3)
+
+e3 = TestDataArray.fromExpected(data=[0, 0, 1], expected=np.array([0, 0, 1]), total_element=3)
+
+v1 = TestDataArray.fromExpected(data=[1, 2, 3], expected=np.array([1, 2, 3]), total_element=3)
+v2 = TestDataArray.fromExpected(data=[0, 10, -100], expected=np.array([0, 10, -100]), total_element=3)
+
+vector_3 =  TestDataArray.fromExpected( data=[1, 1, 1, 1, 1], expected=np.array([1, 1, 1, 1, 1]),  total_element=5)
+vector_4 =  TestDataArray.fromExpected( data=[2, 2, 2, 2, 2], expected=np.array([2, 2, 2, 2, 2]),  total_element=5)
+vector_5 =  TestDataArray.fromExpected( data=[2, 2, 2, 2, 2, 2], expected=np.array([2, 2, 2, 2, 2, 2]),  total_element=6)
+
 empty_vector = TestDataArray.fromVector([], total_element=0)
 
 matrix_1 = TestDataArray.fromMatrix(
@@ -112,6 +122,14 @@ allData = [
     ("scalar", scalar),
     ("vector_1", vector_1),
     ("vector_2", vector_2),
+    ("vector_3", vector_3),
+    ("vector_4", vector_4),
+    ("vector_5", vector_5),
+    ("e1", e1),
+    ("e2", e2),
+    ("e3", e3),
+    ("v1", v1),
+    ("v2", v2),
     ("empty_vector", empty_vector),
     ("matrix_1", matrix_1),
     ("matrix_2", matrix_2),

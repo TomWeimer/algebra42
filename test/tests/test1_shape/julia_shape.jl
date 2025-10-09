@@ -8,7 +8,7 @@ function logShape(name::AbstractString, testData::ShapeData, write_log_fn::Funct
     write_log_fn(toLog)
 end
 
-function run_tests(write_log_fn::Function)
+function run_tests_julia_shape(write_log_fn::Function)
     logShape("scalar", scalar, write_log_fn)
     logShape("empty", empty_vector, write_log_fn)
     logShape("vector", vector_1, write_log_fn)

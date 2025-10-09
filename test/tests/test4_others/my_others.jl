@@ -45,13 +45,6 @@ function singleOneVector()
 end
 
 
-function testNdArray()
-    println("Specials Case: ")
-    printTest("OnesArray",          onesArrayTest())
-    printTest("OnesVector",         onesVectorTest())
-    printTest("ZerosArray",         zerosArrayTest())
-    printTest("ZerosVector",        zerosVectorTest())
-    printTest("SingleOneVector",    singleOneVector())
+function run_tests_my_others(write_log_fn)
+    @assert onesArrayTest() && onesVectorTest() && zerosArrayTest() && zerosVectorTest() && singleOneVector()
 end
-
-testNdArray()

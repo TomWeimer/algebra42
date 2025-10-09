@@ -1,4 +1,4 @@
-created at: [20250917_161530]
+created at: [20251009_185524]
 
 scalar
 42
@@ -21,6 +21,86 @@ index: (1): 10, (2): 20, (3): 30, (4): 40, (5): 50,
 iterator: 10 20 30 40 50 
 slices:
 array[:] = [10, 20, 30, 40, 50]
+
+
+vector_3
+dim: 1
+total_element: 5
+shape: (5,)
+index: (1): 1, (2): 1, (3): 1, (4): 1, (5): 1, 
+iterator: 1 1 1 1 1 
+slices:
+array[:] = [1, 1, 1, 1, 1]
+
+
+vector_4
+dim: 1
+total_element: 5
+shape: (5,)
+index: (1): 2, (2): 2, (3): 2, (4): 2, (5): 2, 
+iterator: 2 2 2 2 2 
+slices:
+array[:] = [2, 2, 2, 2, 2]
+
+
+vector_5
+dim: 1
+total_element: 6
+shape: (6,)
+index: (1): 2, (2): 2, (3): 2, (4): 2, (5): 2, (6): 2, 
+iterator: 2 2 2 2 2 2 
+slices:
+array[:] = [2, 2, 2, 2, 2, 2]
+
+
+e1
+dim: 1
+total_element: 3
+shape: (3,)
+index: (1): 1, (2): 0, (3): 0, 
+iterator: 1 0 0 
+slices:
+array[:] = [1, 0, 0]
+
+
+e2
+dim: 1
+total_element: 3
+shape: (3,)
+index: (1): 0, (2): 1, (3): 0, 
+iterator: 0 1 0 
+slices:
+array[:] = [0, 1, 0]
+
+
+e3
+dim: 1
+total_element: 3
+shape: (3,)
+index: (1): 0, (2): 0, (3): 1, 
+iterator: 0 0 1 
+slices:
+array[:] = [0, 0, 1]
+
+
+v1
+dim: 1
+total_element: 3
+shape: (3,)
+index: (1): 1, (2): 2, (3): 3, 
+iterator: 1 2 3 
+slices:
+array[:] = [1, 2, 3]
+
+
+v2
+dim: 1
+total_element: 3
+shape: (3,)
+index: (1): 0, (2): 10, (3): -100, 
+iterator: 0 10 -100 
+slices:
+array[:] = [0, 10, -100]
 
 
 empty_vector
