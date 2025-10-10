@@ -287,6 +287,7 @@ function Base.getindex(array::NDArray{DType,N}, indices::Vararg{CopyIndices}) wh
    # println("enter motherfucker2")
     shape = size(array)
     convertedIndices = convertIndices(shape, indices)
+    println("converted indices: ", convertedIndices)
     return fancy_index(array, convertedIndices)
 end
 
@@ -409,12 +410,12 @@ end
 
 function convertIndex(shape::Tuple, i::Int, index::Colon)
      println("Enter Bottom !! ", [x for x in 1:shape[i]])
-    return [x for x in 1:shape[i]]
+    return :all
 end
 
 function convertIndex(shape::Tuple, i::Int, index::AbstractRange)
     println("Enter here !! ", collect(index))
-    return collect(index)
+    return index
 end
 
 

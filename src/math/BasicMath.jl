@@ -23,13 +23,23 @@ function prod(array)
     return product
 end
 
-function sum(array)
-    isempty(array) && throw(ArgumentError("There is no element to sum"))
-    sum = 0
-    for element in array
-        sum += element
+# Can be used with a lazy generator
+function sum(iter)
+    state = iterate(iter)
+    state === nothing && return 0  # empty iterable
+
+    x, st = state
+    s = zero(typeof(x))            # use type of first element
+    s += x
+
+    while true
+        next_state = iterate(iter, st)
+        next_state === nothing && break
+        x, st = next_state
+        s += x
     end
-    return sum
+
+    return s
 end
 
 

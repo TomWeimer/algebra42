@@ -1,5 +1,9 @@
 include("../../iterator/NestedArrayIndices.jl")
 
+
+
+abstract type AbstractNDArray{DType, N} <: AbstractArray{DType,N} end
+
 """
    NDArray{DType,N}
 
@@ -10,7 +14,7 @@ Fields:
 
 Provides constructors for scalars, ragged arrays, regular arrays, and matrices.
 """
-mutable struct NDArray{DType,N} <: AbstractArray{DType,N}
+mutable struct NDArray{DType,N} <: AbstractNDArray{DType,N}
    content::Union{Array{DType,1},Array{DType,0}}
    shape::Shape{N}
    strides::Tuple{Vararg{Int}}
@@ -39,6 +43,17 @@ NDArray{DType}(data::AbstractArray{T, N}) where {DType, T, N} = _init(data, Shap
 NDArray{DType}(shape::Tuple) where {DType} = NDArray{DType}(Shape(shape))
 
 NDArray{DType}(shape::Shape{N}) where {DType, N} = NDArray( Array{DType}(undef, shape.length), shape, _compute_strides(shape) )
+
+
+# Create a ndarray from range
+function reshape(range::AbstractRange{T}, shape::NTuple{N})  where {T, N}
+    length(range) == prod(shape) || throw(ArgumentError("Can't resize the range with the shape given"))
+    ndarray = NDArray{T}(shape)
+    for (i, val) in enumerate(range)
+      ndarray[i] = val 
+   end
+   return ndarray
+end
 
 # Functions:
 # ----------
@@ -73,6 +88,10 @@ Base.size(array::NDArray) = array.shape.dims
 Base.ndims(array::NDArray) = ndims(array.shape)
 
 Base.length(array::NDArray) = array.shape.length
+
+Base.eltype(A::NDArray{T}) where {T} = T
+
+Base.pointer(A::NDArray{T}) where T = pointer(A.content)
 
 # Setter:
 
@@ -168,14 +187,16 @@ _init(content::AbstractArray{T}, shape::Shape{N}, strides=_compute_strides(shape
 
 Computes the strides for the given shape, used for efficient indexing.
 """
-function _compute_strides(shape::Shape)
-   dim = length(shape.dims) == 0 ? 1 : length(shape.dims)
+_compute_strides(shape::Shape) = _compute_strides(shape.dims)
+
+function _compute_strides(dims::Tuple)
+   dim = length(dims) == 0 ? 1 : length(dims)
    strds = zeros(Int, dim)
    # The stride for the first dimension is always 1
    strds[1] = 1
    # For subsequent dimensions, stride[i] = stride[i-1] * size[i-1]
    for i in 2:dim
-      strds[i] = strds[i-1] * shape.dims[i-1]
+      strds[i] = strds[i-1] * dims[i-1]
    end
    return Tuple(strds)
 end
