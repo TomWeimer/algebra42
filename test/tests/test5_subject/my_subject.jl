@@ -322,7 +322,7 @@ function run_tests_my_subject(write_log_fn)
     test_trace(Int, write_log_fn)
     test_transpose(Int, write_log_fn)
     test_row_echelon(Int, write_log_fn)
-    #test_determinant(Int, write_log_fn)
+    test_determinant(Int, write_log_fn)
     test_inverse(Int, write_log_fn)
     test_rank(Int, write_log_fn)
 end

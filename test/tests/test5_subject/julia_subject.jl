@@ -317,7 +317,7 @@ function run_tests_julia_subject(write_log_fn)
     test_trace(write_log_fn)
     test_transpose(write_log_fn)
     test_row_echelon(write_log_fn)
-    #test_determinant(write_log_fn)
+    test_determinant(write_log_fn)
     test_inverse(write_log_fn)
     test_rank(write_log_fn)
 end

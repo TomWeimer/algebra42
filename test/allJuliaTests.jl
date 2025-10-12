@@ -115,8 +115,6 @@ for (i, file) in enumerate(test_files)
     println("Running $file -> $logfile")
     global DEFAULT_LOG_FILE = logfile
     write_log("created at: [$RUN_TIMESTAMP]")
-
-    if (i >= 8)
         filename = basename(file)[1:end-3]
         fn_name = Symbol("run_tests_", filename)
        
@@ -126,7 +124,6 @@ for (i, file) in enumerate(test_files)
         if @isdefined fn_name
             getfield(Main, fn_name)(write_log)   # pass println as write_log
         end
-    end
 end
 
 # -------------------- Final summary --------------------

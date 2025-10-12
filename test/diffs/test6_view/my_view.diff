@@ -1,5 +1,5 @@
---- ./logs/test6_view/julia_view.log	2025-10-12 13:49:26
-+++ ./logs/test6_view/my_view.log	2025-10-12 13:49:28
+--- ./logs/test6_view/julia_view.log	2025-10-12 16:30:24
++++ ./logs/test6_view/my_view.log	2025-10-12 16:30:25
 @@ -114,50 +114,24 @@
  dim: 2
  total_element: 4
@@ -136,8 +136,8 @@
 -
 -v_mixed is not copy: 
 -false
---- ./logs/test6_view/numpy_view.log	2025-10-12 13:49:28
-+++ ./logs/test6_view/my_view.log	2025-10-12 13:49:28
+--- ./logs/test6_view/numpy_view.log	2025-10-12 16:30:25
++++ ./logs/test6_view/my_view.log	2025-10-12 16:30:25
 @@ -4,41 +4,32 @@
  dim: 2
  total_element: 6
