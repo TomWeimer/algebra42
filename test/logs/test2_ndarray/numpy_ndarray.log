@@ -2,8 +2,11 @@ created at: [20251012_134904]
 
 scalar
 42
+dim: 0
+total_element: 1
+shape: ()
 
-vector_1
+vector
 dim: 1
 total_element: 4
 shape: (4,)
@@ -13,97 +16,7 @@ slices:
 array[:] = [1, 2, 3, 4]
 
 
-vector_2
-dim: 1
-total_element: 5
-shape: (5,)
-index: (1): 10, (2): 20, (3): 30, (4): 40, (5): 50, 
-iterator: 10 20 30 40 50 
-slices:
-array[:] = [10, 20, 30, 40, 50]
-
-
-vector_3
-dim: 1
-total_element: 5
-shape: (5,)
-index: (1): 1, (2): 1, (3): 1, (4): 1, (5): 1, 
-iterator: 1 1 1 1 1 
-slices:
-array[:] = [1, 1, 1, 1, 1]
-
-
-vector_4
-dim: 1
-total_element: 5
-shape: (5,)
-index: (1): 2, (2): 2, (3): 2, (4): 2, (5): 2, 
-iterator: 2 2 2 2 2 
-slices:
-array[:] = [2, 2, 2, 2, 2]
-
-
-vector_5
-dim: 1
-total_element: 6
-shape: (6,)
-index: (1): 2, (2): 2, (3): 2, (4): 2, (5): 2, (6): 2, 
-iterator: 2 2 2 2 2 2 
-slices:
-array[:] = [2, 2, 2, 2, 2, 2]
-
-
-e1
-dim: 1
-total_element: 3
-shape: (3,)
-index: (1): 1, (2): 0, (3): 0, 
-iterator: 1 0 0 
-slices:
-array[:] = [1, 0, 0]
-
-
-e2
-dim: 1
-total_element: 3
-shape: (3,)
-index: (1): 0, (2): 1, (3): 0, 
-iterator: 0 1 0 
-slices:
-array[:] = [0, 1, 0]
-
-
-e3
-dim: 1
-total_element: 3
-shape: (3,)
-index: (1): 0, (2): 0, (3): 1, 
-iterator: 0 0 1 
-slices:
-array[:] = [0, 0, 1]
-
-
-v1
-dim: 1
-total_element: 3
-shape: (3,)
-index: (1): 1, (2): 2, (3): 3, 
-iterator: 1 2 3 
-slices:
-array[:] = [1, 2, 3]
-
-
-v2
-dim: 1
-total_element: 3
-shape: (3,)
-index: (1): 0, (2): 10, (3): -100, 
-iterator: 0 10 -100 
-slices:
-array[:] = [0, 10, -100]
-
-
-empty_vector
+empty
 dim: 1
 total_element: 0
 shape: (0,)
@@ -113,7 +26,7 @@ slices:
 array[:] = []
 
 
-matrix_1
+matrix 1
 dim: 2
 total_element: 6
 shape: (2, 3)
@@ -127,7 +40,7 @@ array[1, :] = [1, 3, 5]
 array[2, :] = [2, 4, 6]
 
 
-matrix_2
+matrix 2
 dim: 2
 total_element: 9
 shape: (3, 3)
@@ -142,20 +55,7 @@ array[2, :] = [2, 5, 8]
 array[3, :] = [3, 6, 9]
 
 
-column_matrix
-dim: 2
-total_element: 3
-shape: (3, 1)
-index: (1, 1): 1, (2, 1): 2, (3, 1): 3, 
-iterator: 1 2 3 
-slices:
-array[:, 1] = [1, 2, 3]
-array[1, :] = [1]
-array[2, :] = [2]
-array[3, :] = [3]
-
-
-row_matrix
+row
 dim: 2
 total_element: 3
 shape: (1, 3)
@@ -168,7 +68,20 @@ array[:, 3] = [3]
 array[1, :] = [1, 2, 3]
 
 
-array_3D_1
+column
+dim: 2
+total_element: 3
+shape: (3, 1)
+index: (1, 1): 1, (2, 1): 2, (3, 1): 3, 
+iterator: 1 2 3 
+slices:
+array[:, 1] = [1, 2, 3]
+array[1, :] = [1]
+array[2, :] = [2]
+array[3, :] = [3]
+
+
+array3D 1
 dim: 3
 total_element: 8
 shape: (2, 2, 2)
@@ -189,7 +102,7 @@ array[1, 2, :] = [3, 7]
 array[2, 2, :] = [4, 8]
 
 
-array_3D_2
+array3D 2
 dim: 3
 total_element: 24
 shape: (4, 3, 2)
@@ -224,7 +137,83 @@ array[3, 3, :] = [11, 23]
 array[4, 3, :] = [12, 24]
 
 
-ragged_array
+ragged array
+dim: 1
+total_element: 2
+shape: (2,)
+index: (1): [1, 2], (2): [3, 4, 5], 
+iterator: [1, 2] [3, 4, 5] 
+slices:
+array[:] = [[1, 2], [3, 4, 5]]
+
+
+scalar
+42
+dim: 0
+total_element: 1
+shape: ()
+
+vector
+dim: 1
+total_element: 4
+shape: (4,)
+index: (1): 1, (2): 2, (3): 3, (4): 4, 
+iterator: 1 2 3 4 
+slices:
+array[:] = [1, 2, 3, 4]
+
+
+matrix
+dim: 1
+total_element: 3
+shape: (3,)
+index: (1): 1, (2): 3, (3): 5, 
+iterator: 1 3 5 
+slices:
+array[:] = [1, 3, 5]
+
+
+array3D
+dim: 1
+total_element: 2
+shape: (2,)
+index: (1): 1, (2): 5, 
+iterator: 1 5 
+slices:
+array[:] = [1, 5]
+
+
+emptyArray
+dim: 1
+total_element: 0
+shape: (0,)
+index: 
+iterator: 
+slices:
+array[:] = []
+
+
+columnVector
+dim: 1
+total_element: 1
+shape: (1,)
+index: (1): 1, 
+iterator: 1 
+slices:
+array[:] = [1]
+
+
+rowVector
+dim: 1
+total_element: 3
+shape: (3,)
+index: (1): 1, (2): 2, (3): 3, 
+iterator: 1 2 3 
+slices:
+array[:] = [1, 2, 3]
+
+
+raggedArray
 dim: 1
 total_element: 2
 shape: (2,)

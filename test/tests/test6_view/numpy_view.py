@@ -3,9 +3,12 @@ import data.testData as data
 import data.testUtils as utils
 import numpy as np
 
-
+def logScalarContent(name, test, write_log_fn: callable):
+    write_log_fn("\n" + name)
+    utils.write_scalar_content(test, write_log_fn)
+    
 def logBoolContent(name, isTrue:bool, write_log_fn: callable):
-    write_log_fn("\n" * name)
+    write_log_fn("\n" + name)
     if (isTrue is True):
         write_log_fn("true")
     else:
@@ -26,9 +29,9 @@ def test_basic_contiguous_view(write_log_fn):
 
     logViewContent("basic view 1", v, write_log_fn)
     
-    logViewContent("basic view size ok", v.shape == (2, 3), write_log_fn)
-    logViewContent("basic view access 1 ok", v[0, 0] == A[1, 1], write_log_fn)
-    logViewContent("basic view access 2 ok", v[1, 2] == A[2, 3], write_log_fn)
+    logBoolContent("basic view size ok", v.shape == (2, 3), write_log_fn)
+    logBoolContent("basic view access 1 ok", v[0, 0] == A[1, 1], write_log_fn)
+    logBoolContent("basic view access 2 ok", v[1, 2] == A[2, 3], write_log_fn)
 
     v[0, 0] = -99
 
@@ -74,7 +77,7 @@ def test_strided_slice(write_log_fn):
 
     logBoolContent("strided slice access ok 2:", v[1, 1] == A[2, 2], write_log_fn)
     
-    logViewContent("strided share memory:", np.shares_memory(A, v), write_log_fn)
+    logBoolContent("strided share memory:", np.shares_memory(A, v), write_log_fn)
 
 
 def test_view_of_view(write_log_fn):
@@ -91,7 +94,7 @@ def test_view_of_view(write_log_fn):
 
     logBoolContent("view v2 access ok:",  v2[0, 0] == A[2, 1], write_log_fn)
     
-    logViewContent("v2 share memory:", np.shares_memory(A, v2), write_log_fn)
+    logBoolContent("v2 share memory:", np.shares_memory(A, v2), write_log_fn)
 
 
 def test_fancy_indexing(write_log_fn):
@@ -115,7 +118,7 @@ def test_scalar_view(write_log_fn):
     A = np.arange(9).reshape(3, 3)
     s = A[1, 2]
     
-    logViewContent("scalar view: ", s, write_log_fn)
+    logScalarContent("scalar view: ", s, write_log_fn)
 
     logBoolContent("scalar content: ", s == 5, write_log_fn)
 
@@ -127,7 +130,7 @@ def test_transpose_is_view(write_log_fn):
     T = A.T
     
     logViewContent("transpose view: ", T, write_log_fn)
-    logViewContent("transpose is view: ",  np.shares_memory(A, T), write_log_fn)
+    logBoolContent("transpose is view: ",  np.shares_memory(A, T), write_log_fn)
     logBoolContent("transpose size ok: ", size(T) == (3, 3), write_log_fn)
     logBoolContent("transpose access ok: ", T[0, 1] == A[1, 0], write_log_fn)
 
