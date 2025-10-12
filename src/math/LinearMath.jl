@@ -586,7 +586,7 @@ function det3x3(A::AbstractArray{T,2}) where T
         # minor = remove first row and column j
         rows = 2:3
         cols = setdiff(1:3, j)
-        minor = isNDArray ? A[ix_(rows, cols)] : @view A[rows, cols]
+        minor = isNDArray ? A[rows, cols] : @view A[rows, cols]
         println("minor: ", minor, "rows: $rows ", " cols: $cols ", " A: $A" )
         det += (-1)^(1 + j) * A[1, j] * det2x2(minor)
     end
@@ -786,7 +786,7 @@ function broadcast(broadcast_function::Function, arrays::Vararg{AbstractArray})
     return output_array
 end
 
-function obtain_broadcast_shape(arrays::Tuple{Vararg{AbstractArray}})
+function obtain_broadcast_shape(arrays::Tuple{Vararg{Any}})
     padded_shapes = obtain_padded_shapes(arrays)
 
     maxDim = length(padded_shapes[1])

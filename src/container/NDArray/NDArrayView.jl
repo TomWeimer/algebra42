@@ -207,7 +207,7 @@ function Base.getindex(v::NDArrayView{DType,N}, indices::Vararg{ElementIndex,N})
     # Check if the index are valid
     (elementsAreValid(size(v), indices...)) || throw(DomainError("Indexes out of bounds"))
 
-    println("v.parent: ", v.parent, " indices: ", indices, " offset: ", _offset(v, indices...))
+   # println("v.parent: ", v.parent, " indices: ", indices, " offset: ", _offset(v, indices...))
 
     
     # If the index is valid return the associated elements
@@ -296,7 +296,7 @@ end
 function _offset(view::NDArrayView{T, N}, indices::Vararg{Int, N})::Int where{T, N}
     offset = view.initial_offset  # base offset in parent array
     for i in 1:ndims(view)
-        println("enter in the loop: ", offset)
+      #  println("enter in the loop: ", offset)
         offset += (indices[i] - 1) * view.strides[i]
     end
     return offset + 1

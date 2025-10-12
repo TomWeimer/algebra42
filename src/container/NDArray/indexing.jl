@@ -255,9 +255,7 @@ subset_bool = nd_array[bool_mask]
 # subset_bool will be a new NDArray with content [10, 30]
 """
 function Base.getindex(array::NDArray{DType,N}, indices::CopyIndices) where {DType,N}
-    shape = size(array)
-    convertedIndices = convertIndices(shape, indices)
-    return fancy_index(array, convertedIndices)
+    return fancy_index(array, indices)
 end
 
 
@@ -285,10 +283,7 @@ actual selection and broadcasting logic to create the final result.
 """
 function Base.getindex(array::NDArray{DType,N}, indices::Vararg{CopyIndices}) where {DType,N}
    # println("enter motherfucker2")
-    shape = size(array)
-    convertedIndices = convertIndices(shape, indices)
-    println("converted indices: ", convertedIndices)
-    return fancy_index(array, convertedIndices)
+    return fancy_index(array, indices)
 end
 
 
@@ -317,70 +312,27 @@ Advanced/fancy indexing for NDArray using MultiIter.
 - **Time complexity:** O(n) (linear in the number of elements to retrieve)
 - **Space complexity:** O(n) (for the output array)
 """
-function fancy_index(A::NDArray, indices)
+# function fancy_index(A::NDArray, indices)
 
-    # Step 2: Compute broadcasted shape of indices
-    output_shape = obtain_broadcast_shape(indices)
+#     # Step 2: Compute broadcasted shape of indices
+#     output_shape = obtain_broadcast_shape(indices)
 
-    println("output_shape: $output_shape")
+#     println("output_shape: $output_shape")
 
-    # Step 3: Initialize output array
-    out = NDArray{eltype(A)}(output_shape)
+#     # Step 3: Initialize output array
+#     out = NDArray{eltype(A)}(output_shape)
 
-    # Step 4: Create multi-iterator over index arrays
-    mit = MultiIter(indices...)
+#     # Step 4: Create multi-iterator over index arrays
+#     mit = MultiIter(indices...)
 
-    # Step 5: Iterate and extract elements
-    for (out_idx, idx_vals) in zip(CartesianIndices(output_shape), mit)
-        linear_idx = Tuple(idx_vals)
-        out[out_idx] = A[linear_idx...]  # use splatting for multi-dimensional indexing
-    end
+#     # Step 5: Iterate and extract elements
+#     for (out_idx, idx_vals) in zip(CartesianIndices(output_shape), mit)
+#         linear_idx = Tuple(idx_vals)
+#         out[out_idx] = A[linear_idx...]  # use splatting for multi-dimensional indexing
+#     end
 
-    return out
-end
-
-"""
-    ix_(inds::Vararg{AbstractVector})
-
-Create broadcastable indices for fancy indexing (like `np.ix_` in NumPy).
-
-# Arguments
-- `inds...`: One or more 1D index arrays.
-
-# Returns
-- Tuple of arrays, each reshaped for broadcasting across dimensions.
-"""
-function ix_(inds...)
-    
-    idx_arrays = map(inds) do ind
-        if ind isa AbstractArray{Bool}
-            findall(identity, ind)
-        elseif ind isa AbstractVector || ind isa AbstractRange  # Vector or range
-            collect(ind)
-        elseif ind isa Colon
-            ind  # leave as Colon to handle full dimension
-        else  # single integer
-            [ind]
-        end
-    end
-
-    allIndex = map(enumerate(idx_arrays)) do (i, arr)
-        if arr isa Colon
-            arr  # leave Colon as is
-        else
-            # reshape to 1 along all axes except the current one
-            shape = ntuple(d -> d == i ? length(arr) : 1, length(idx_arrays))
-            reshape(arr, shape)
-        end
-    end
-
-    # Reshape each array for broadcasting
-    println("allIndex: ", allIndex)
-    return tuple(allIndex...)
-end
-
-
-
+#     return out
+# end
 
 
 # Internal methods:
@@ -410,12 +362,12 @@ end
 
 function convertIndex(shape::Tuple, i::Int, index::Colon)
      println("Enter Bottom !! ", [x for x in 1:shape[i]])
-    return :all
+    return [x for x in 1:shape[i]]
 end
 
 function convertIndex(shape::Tuple, i::Int, index::AbstractRange)
     println("Enter here !! ", collect(index))
-    return index
+    return collect(index)
 end
 
 
@@ -426,7 +378,6 @@ end
 function elementsAreValid(dims::Tuple, indices::Vararg{Union{Int,Colon}})
    return all((t) -> isa(t[1], Colon) || (1 <= t[1] <= t[2]), zip(indices, dims))
 end
-
 # Exceptions:
 # ----------------
 
