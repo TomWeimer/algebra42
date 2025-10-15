@@ -20,7 +20,13 @@ function test_basic_view2(write_log_fn)
     A = Algebra42.reshape(0:15, (4, 4))
     v = Algebra42.create_view_from_indices(A, 2:3, 2:4)
 
+    logViewContent("basic A", A, write_log_fn)
+
     logViewContent("basic view 1", v, write_log_fn)
+
+    logViewContent("basic view size ok", size(v) == (2, 3), write_log_fn)
+    logViewContent("basic view access 1 ok", v[1, 1] == A[2, 2], write_log_fn)
+    logViewContent("basic view access 2 ok", v[2, 2] == A[3, 3], write_log_fn)
 
     v[1, 1] = -99
 
@@ -106,17 +112,17 @@ function test_fancy_indexing_copy2(write_log_fn)
 
     logViewContent("fancy index: ", fancy, write_log_fn)
 
-    logViewContent("fancy index is copy: ", !pointer(A) == pointer(fancy), fancy, write_log_fn)
+    logViewContent("fancy index is copy: ", pointer(A) != pointer(fancy), write_log_fn)
 
-    logViewContent("fancy index size ok: ", size(fancy) == (3, 2), fancy, write_log_fn)
+    logViewContent("fancy index size ok: ", size(fancy) == (3, 2),  write_log_fn)
 
-    logViewContent("fancy index access 1 ok: ", fancy[1, 1] == A[1, 2], fancy, write_log_fn)
+    logViewContent("fancy index access 1 ok: ", fancy[1, 1] == A[1, 2], write_log_fn)
 
-    logViewContent("fancy index access 2 ok: ", fancy[3, 2] == A[4, 4], fancy, write_log_fn)
+    logViewContent("fancy index access 2 ok: ", fancy[3, 2] == A[4, 4], write_log_fn)
 end
 
 function test_scalar_view2(write_log_fn)
-    A = Algebra42.reshape(0:15, (4, 4))
+    A = Algebra42.reshape(0:8, (3, 3))
 
     # -----------------------------
     # Scalar view
@@ -125,7 +131,7 @@ function test_scalar_view2(write_log_fn)
 
     logViewContent("scalar view: ", s,  write_log_fn)
 
-    logViewContent("scalar content: ", s == 6,  write_log_fn)
+    logViewContent("scalar content: ", s == 7,  write_log_fn)
 
     logViewContent("is numeric: ", typeof(s) <: Number,  write_log_fn)
 end
@@ -153,13 +159,15 @@ function test_write_through_view2(write_log_fn)
 end
 
 function test_trivial_view2(write_log_fn)
-    B = Algebra42.reshape(0:8, (3, 3))
+    A = Algebra42.reshape(0:8, (3, 3))
 
-    v_trivial = Algebra42.create_view_from_indices(B, :, :)
+    v = Algebra42.create_view_from_indices(A, :, :)
+    
+    logViewContent("trivial view: ", v, write_log_fn)
 
-    logViewContent("trivial view: ", v_trivial, write_log_fn)
+    logViewContent("trivial view is same object: ", v === A , write_log_fn)
 
-    logViewContent("trivial view is parent: ", pointer(v_trivial) == pointer(B), write_log_fn)
+    logViewContent("trivial view is parent: ",  v === A || (pointer(v) == pointer(A) && strides(v) == strides(A) && size(v) == size(A)), write_log_fn)
 end
 
 
@@ -179,12 +187,13 @@ function test_shape_and_strides_consistency2(write_log_fn)
 end
 
 function test_fancy_indexing_diagonal2(write_log_fn)
-    C = Algebra42.reshape(0:11, (3, 4))
+    C = Algebra42.reshape(0:15, (4, 4))
+    row = NDArray{Int}([[1],[2]])
 
-    v_fancy_diag = C[[1,2], [3,4]]
+    v_fancy_diag = C[row, [3,4]]
 
     logViewContent("v_fancy_diag view: ", v_fancy_diag, write_log_fn)
-    logViewContent("v_fancy_diag is copy: ", !pointer(C) == pointer(v_fancy_diag), write_log_fn)
+    logViewContent("v_fancy_diag is copy: ", pointer(C) != pointer(v_fancy_diag), write_log_fn)
     logViewContent("v_fancy_diag size: ", size(v_fancy_diag) == (2,), write_log_fn)
 end
 
@@ -199,7 +208,7 @@ function test_nested_view2(write_log_fn)
     logViewContent("v_nested1 view: ", v_nested1, write_log_fn)
 
 
-    v_nested2 = Algebra42.create_view_from_indices(v_nested1, :, 3:(v_nested1, 2))
+    v_nested2 = Algebra42.create_view_from_indices(v_nested1, :, 3:size(v_nested1, 2))
 
     logViewContent("v_nested2 view: ", v_nested2, write_log_fn)
 
@@ -239,13 +248,14 @@ function run_tests_my_view(write_log_fn)
     test_dimension_droping2(write_log_fn) # scalar
     test_strided_slice2(write_log_fn)
     test_view_of_view2(write_log_fn)
-   # test_fancy_indexing_copy2(write_log_fn)
+    test_fancy_indexing_copy2(write_log_fn)
     test_scalar_view2(write_log_fn)
     #test_transpose_view2(write_log_fn)
     test_write_through_view2(write_log_fn)
     test_trivial_view2(write_log_fn)
-    # test_shape_and_strides_consistency2(write_log_fn)
-    # test_nested_view2(write_log_fn)
-    # test_mixed_indexing2(write_log_fn)
+    test_shape_and_strides_consistency2(write_log_fn)
+    test_fancy_indexing_diagonal2(write_log_fn)
+    test_nested_view2(write_log_fn)
+    test_mixed_indexing2(write_log_fn)
    # test_boolean_mask(write_log_fn)
 end

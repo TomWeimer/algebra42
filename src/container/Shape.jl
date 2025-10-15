@@ -227,7 +227,7 @@ end
 # Using this function and an offset we mimic a shape prepended with 1 without allocating it
 function Base.getindex(prep_shape::PaddedShape{OriginalDimension}, i::Int) where {OriginalDimension}
     if (prep_shape.expectedDimension[] == OriginalDimension)
-        return prep_shape.originalShape[][1]
+        return prep_shape.originalShape[][i]
     else
         offset = prep_shape.expectedDimension[] - OriginalDimension
         return (i <= offset) ? 1 : prep_shape.originalShape[][i-offset]
@@ -241,3 +241,21 @@ Base.length(padded_shape::PaddedShape{OriginalDimension}) where {OriginalDimensi
 
 Base.size(padded_shape::PaddedShape{OriginalDimension}) where {OriginalDimension} = ntuple(i -> padded_shape[i], length(padded_shape))
 
+
+function Base.show(io::IO, p::PaddedShape)
+    N = length(p)
+    if N == 0
+        print(io, "PaddedShape(())")
+    else
+        result = "(" * string(p[1])
+
+        for i in 2:length(p)
+            result *= ", $(string(p[i]))"
+        end
+
+        result *= " )"
+        print(io, result)
+    end
+end
+
+Base.show(io::IO, ::MIME"text/plain", p::PaddedShape) = show(io, p)

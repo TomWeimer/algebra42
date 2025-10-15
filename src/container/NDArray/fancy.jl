@@ -75,16 +75,23 @@ function _value_from_fancy(idx, output_shape, output_idx, padded_shape::PaddedSh
     # index used to access idx is smaller than the ones to access output_idx
 
     # The first case is trivial, if they have the same shape, they have the same indices
-    if (size(idx) == output_shape)
+    shape_idx = size(idx)
+    if (shape_idx == output_shape)
         return idx[output_idx]
     
     # The second case depends on the broadcast shape, if the padded_shape is not 1 then add the iterator to idx_used
     else
-        idx_used = []
+        idx_used = Int[]
 
         for i in 1:length(padded_shape)
             (padded_shape[i] > 1) && push!(idx_used, output_idx[fancy_offset + i])
         end
+
+        while (length(idx_used) < length(shape_idx))
+            push!(idx_used, 1)
+        end
+
+       # println("idx: $idx, idx_used: $idx_used, padded_shape: $padded_shape, output_idx: $idx, output_shape: $output_shape")
 
         return idx[idx_used...]
     end

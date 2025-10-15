@@ -55,6 +55,10 @@ function reshape(range::AbstractRange{T}, shape::NTuple{N})  where {T, N}
    return ndarray
 end
 
+function Base.strides(A::NDArray{T, N}) where {T,N}
+   return A.strides
+end
+
 # Functions:
 # ----------
 
@@ -92,6 +96,11 @@ Base.length(array::NDArray) = array.shape.length
 Base.eltype(A::NDArray{T}) where {T} = T
 
 Base.pointer(A::NDArray{T}) where T = pointer(A.content)
+
+function Base.stride(A::NDArray{T, N}, k::Integer) where {T,N}
+   (1 <= k <= N) || throw(ArgumentError("The index k is out of bounds"))
+   return A.strides[k]
+end
 
 # Setter:
 

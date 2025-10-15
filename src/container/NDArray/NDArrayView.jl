@@ -1,3 +1,7 @@
+
+abstract type AbstractNDArrayView{T, N, M} <: AbstractNDArray{T, N} end
+
+
 """
     NDArrayView{DType, N, M} <: AbstractNDArray{DType, N}
 
@@ -43,7 +47,7 @@ A = NDArray(rand(4, 4))
 V = NDArrayView(A, (2:3, 1:2), initial_offset=5, strides=(4, 1))
 V[1, 1] == A[2, 1]  # true — same memory, different view
 """
-mutable struct NDArrayView{DType, N, M} <: AbstractNDArray{DType,N}
+mutable struct NDArrayView{DType, N, M} <: AbstractNDArrayView{DType, N, M}
    parent::AbstractNDArray{DType, M}
    shape::NTuple{N}
    initial_offset::Int              # starting position in the parent’s linear buffer
@@ -58,6 +62,15 @@ Base.eltype(A::NDArrayView{T}) where {T} = T
 
 Base.pointer(A::NDArrayView{T}) where T = pointer(A.parent)
 
+function Base.stride(A::NDArrayView{T, N}, k::Integer) where {T,N}
+   (1 <= k <= N) || throw(ArgumentError("The index k is out of bounds"))
+   return A.strides[k]
+end
+
+
+function Base.strides(A::NDArrayView{T, N}) where {T,N}
+   return A.strides
+end
 
 
 # --------------------------------------------------------------------------------------------- #
@@ -67,10 +80,13 @@ Base.pointer(A::NDArrayView{T}) where T = pointer(A.parent)
 # --------------------------------------------------------------------------------------------- #
 
 function create_view_from_indices(parent::AbstractNDArray{T, M}, indices::Vararg{Colon, M}) where {T, M}
-    return parent
+    return NDArrayView{T, M, M}(parent, size(parent), 0, strides(parent))
 end
 
-function create_view_from_indices(parent::AbstractNDArray{T, M}, indices::Vararg{Any, M}) where {T, M}
+
+create_view_from_indices(parent::NDArrayView{T, M}, indices::Vararg{Any, M}) where {T, M} = create_view_from_indices(parent, indices...; default_init_offset = parent.initial_offset)
+
+function create_view_from_indices(parent::AbstractNDArray{T, M}, indices::Vararg{Any, M}; default_init_offset = 0) where {T, M}
 
     # 1. Input Validation and Preparation
     # Convert Vararg to a tuple for consistent handling
@@ -79,7 +95,7 @@ function create_view_from_indices(parent::AbstractNDArray{T, M}, indices::Vararg
     # 2. Step 1: Calculate the Absolute Initial Offset
     # This must be done first, as it uses ALL indices (including the ones that drop dimensions)
     # and the parent's original strides to find the view's starting byte.
-    initial_offset = obtain_initial_offset(parent, index_tuple)
+    initial_offset = obtain_initial_offset(parent, index_tuple) + default_init_offset
 
     # 3. Step 2: Create the Final View Object
     # This function uses the same index_tuple and the newly calculated offset.
@@ -239,31 +255,12 @@ end
 #                                                                                               #
 # --------------------------------------------------------------------------------------------- #
 
-function Base.view(parent::NDArrayView, inds::Vararg{ViewIndices})
-    view = create_view_from_indices(parent, inds...)
-    
-    if size(view) == size(parent) && view.strides == parent.strides && view.initial_offset == 0
-        return parent
-    end
+# function Base.view(parent::AbstractNDArray, inds::Vararg{ViewIndices})
+#     view = create_view_from_indices(parent, inds...)
 
-    return view
-end
+#     return view
+# end
 
-# --------------------------------------------------------------------------------------------- #
-#                                                                                               #
-#                                       Create View:                                            #
-#                                                                                               #
-# --------------------------------------------------------------------------------------------- #
-
-function Base.view(parent::NDArrayView, inds::Vararg{ViewIndices})
-    view = create_view_from_indices(parent, inds...)
-    
-    if size(view) == size(parent) && view.strides == parent.strides && view.initial_offset == 0
-        return parent
-    end
-
-    return view
-end
 
 # --------------------------------------------------------------------------------------------- #
 #                                                                                               #

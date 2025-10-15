@@ -5,11 +5,11 @@ import numpy as np
 
 def logScalarContent(name, test, write_log_fn: callable):
     write_log_fn("\n" + name)
-    utils.write_scalar_content(test, write_log_fn)
+    write_log_fn(str(test))
     
 def logBoolContent(name, isTrue:bool, write_log_fn: callable):
     write_log_fn("\n" + name)
-    if (isTrue is True):
+    if isTrue:
         write_log_fn("true")
     else:
         write_log_fn("false")
@@ -24,14 +24,17 @@ def size(ndarray):
 
 
 def test_basic_contiguous_view(write_log_fn):
-    A = np.arange(16).reshape(4, 4)
-    v = A[1:3, 1:4]
-
-    logViewContent("basic view 1", v, write_log_fn)
+    A = np.arange(16).reshape(4, 4, order='F')
     
+    v = A[1:3, 1:4]
+    
+    logViewContent("basic A", A, write_log_fn)
+    
+    logViewContent("basic view 1", v, write_log_fn)
+ 
     logBoolContent("basic view size ok", v.shape == (2, 3), write_log_fn)
     logBoolContent("basic view access 1 ok", v[0, 0] == A[1, 1], write_log_fn)
-    logBoolContent("basic view access 2 ok", v[1, 2] == A[2, 3], write_log_fn)
+    logBoolContent("basic view access 2 ok", v[1, 1] == A[2, 2], write_log_fn)
 
     v[0, 0] = -99
 
@@ -40,7 +43,7 @@ def test_basic_contiguous_view(write_log_fn):
 
 
 def test_colon_view(write_log_fn):
-    A = np.arange(9).reshape(3, 3)
+    A = np.arange(9).reshape(3, 3, order='F')
     v = A[:, :]
     
     logViewContent("colon view 1", v, write_log_fn)
@@ -51,7 +54,7 @@ def test_colon_view(write_log_fn):
 
 
 def test_dimension_dropping(write_log_fn):
-    A = np.arange(16).reshape(4, 4)
+    A = np.arange(16).reshape(4, 4, order='F')
     row = A[1, :]     # shape (4,)
     col = A[:, 2]     # shape (4,)
     
@@ -66,8 +69,8 @@ def test_dimension_dropping(write_log_fn):
 
 
 def test_strided_slice(write_log_fn):
-    A = np.arange(16).reshape(4, 4)
-    v = A[::2, ::2]
+    A = np.arange(16).reshape(4, 4, order='F')
+    v = A[0:4:2, 0:4:2]
     
     logViewContent("strided slice view:", v, write_log_fn)
 
@@ -81,7 +84,7 @@ def test_strided_slice(write_log_fn):
 
 
 def test_view_of_view(write_log_fn):
-    A = np.arange(16).reshape(4, 4)
+    A = np.arange(16).reshape(4, 4, order='F')
     v1 = A[1:4, 1:4]
 
     logViewContent("view of view v1:", v1, write_log_fn)
@@ -98,7 +101,7 @@ def test_view_of_view(write_log_fn):
 
 
 def test_fancy_indexing(write_log_fn):
-    A = np.arange(16).reshape(4, 4)
+    A = np.arange(16).reshape(4, 4, order='F')
     rows = [0, 2, 3]
     cols = [1, 3]
     fancy = A[rows, :][:, cols]
@@ -115,18 +118,18 @@ def test_fancy_indexing(write_log_fn):
 
 
 def test_scalar_view(write_log_fn):
-    A = np.arange(9).reshape(3, 3)
+    A = np.arange(9).reshape(3, 3, order='F')
     s = A[1, 2]
     
     logScalarContent("scalar view: ", s, write_log_fn)
 
-    logBoolContent("scalar content: ", s == 5, write_log_fn)
+    logBoolContent("scalar content: ", s == 7, write_log_fn)
 
     logBoolContent("is numeric: ",  np.isscalar(s),  write_log_fn)
 
 
 def test_transpose_is_view(write_log_fn):
-    A = np.arange(9).reshape(3, 3)
+    A = np.arange(9).reshape(3, 3, order='F')
     T = A.T
     
     logViewContent("transpose view: ", T, write_log_fn)
@@ -136,7 +139,7 @@ def test_transpose_is_view(write_log_fn):
 
 
 def test_write_through_behavior(write_log_fn):
-    A = np.arange(9).reshape(3, 3)
+    A = np.arange(9).reshape(3, 3, order='F')
     v = A[1:, 1:]
     
     logViewContent("write through view: ", v, write_log_fn)
@@ -144,18 +147,36 @@ def test_write_through_behavior(write_log_fn):
 
     logBoolContent("write through parent: ", A[1, 1] == -42, write_log_fn)
 
+def ultimate_base(x):
+    """Follow .base chain to find the original array owning the memory."""
+    base = x
+    while hasattr(base, 'base') and base.base is not None:
+        base = base.base
+    return base
 
+def is_trivial_view(v, A):
+    """Return True if v is a trivial view of A (identity view)."""
+    return (
+        ultimate_base(v) is ultimate_base(A) and
+        v.shape == A.shape and
+        v.strides == A.strides and
+        v.dtype == A.dtype and
+        v.__array_interface__['data'][0] == A.__array_interface__['data'][0]
+    )
+    
 def test_trivial_view_identity(write_log_fn):
-    A = np.arange(9).reshape(3, 3)
+    A = np.arange(9).reshape(3, 3, order='F')
     v = A[:, :]
     
     logViewContent("trivial view: ", v, write_log_fn)
+    
+    logBoolContent("trivial view is same object: ",  v is A, write_log_fn)
 
-    logBoolContent("trivial view is parent: ",  v.base is A, write_log_fn)
+    logBoolContent("trivial view is parent: ", is_trivial_view(v, A), write_log_fn)
 
 
 def test_shape_and_stride_consistency(write_log_fn):
-    A = np.arange(12).reshape(3, 4)
+    A = np.arange(12).reshape(3, 4, order='F')
     v = A[::2, :]
     
     logViewContent("v_stride2 view: ", v, write_log_fn)
@@ -166,8 +187,8 @@ def test_shape_and_stride_consistency(write_log_fn):
 
 
 def test_error_fancy_index_copy(write_log_fn):
-    A = np.arange(16).reshape(4, 4)
-    v = A[[0, 1], [2, 3]]  # diagonal fancy indexing
+    A = np.arange(16).reshape(4, 4, order='F')
+    v = A[[[0], [1]], [2, 3]]  # diagonal fancy indexing
     # fancy indexing returns a copy
     
     logViewContent("v_fancy_diag view: ", v, write_log_fn)
@@ -176,7 +197,7 @@ def test_error_fancy_index_copy(write_log_fn):
 
 
 def test_nested_view_does_not_copy(write_log_fn):
-    A = np.arange(16).reshape(4, 4)
+    A = np.arange(16).reshape(4, 4, order='F')
     v1 = A[1:, :]
     
     
@@ -190,7 +211,7 @@ def test_nested_view_does_not_copy(write_log_fn):
     
 
 def test_mixed_indexing(write_log_fn):
-    A = np.arange(27).reshape(3, 3, 3)
+    A = np.arange(27).reshape(3, 3, 3, order='F')
     v = A[1, :, 1:]
     
     logViewContent("v_mixed view: ", v, write_log_fn)
@@ -199,7 +220,7 @@ def test_mixed_indexing(write_log_fn):
 
 
 # def test_boolean_mask_creates_copy(write_log_fn):
-#     A = np.arange(9).reshape(3, 3)
+#     A = np.arange(9).reshape(3, 3, order='F')
 #     mask = A > 4
 #     v = A[mask]
 #     assert not np.shares_memory(A, v)

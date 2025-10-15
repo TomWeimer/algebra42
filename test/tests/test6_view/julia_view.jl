@@ -9,6 +9,19 @@ function logViewContent(name, data, write_log_fn)
     write_content(data, write_log_fn)
 end
 
+function get_root_parent(A)
+    p = parent(A)
+    # Le parent d'un tableau racine est lui-même.
+    # On itère jusqu'à ce que le parent soit l'objet actuel.
+    return p === A ? A : get_root_parent(p)
+end
+
+function shares_memory(A, B)
+    # Utilise l'opérateur d'identité '===' pour vérifier si les deux objets
+    # racines sont la même instance en mémoire.
+    return get_root_parent(A) === get_root_parent(B)
+end
+
 
 function test_basic_view(write_log_fn)
     # -----------------------------
@@ -17,7 +30,13 @@ function test_basic_view(write_log_fn)
     A = reshape(collect(0:15), 4, 4)
     v = @view A[2:3, 2:4]
 
+    logViewContent("basic A", A, write_log_fn)
+
     logViewContent("basic view 1", v, write_log_fn)
+      
+    logViewContent("basic view size ok", size(v) == (2, 3), write_log_fn)
+    logViewContent("basic view access 1 ok", v[1, 1] == A[2, 2], write_log_fn)
+    logViewContent("basic view access 2 ok", v[2, 2] == A[3, 3], write_log_fn)
 
     v[1, 1] = -99
 
@@ -90,7 +109,7 @@ function test_view_of_view(write_log_fn)
 
     logViewContent("view v2 access ok:",  v2[1, 1] == A[3, 2], write_log_fn)
 
-    logViewContent("v2 share memory:",  pointer(A) == pointer(v2), write_log_fn)
+    logViewContent("v2 share memory:",  shares_memory(A, v2), write_log_fn)
 end
 
 function test_fancy_indexing_copy(write_log_fn)
@@ -111,7 +130,7 @@ function test_fancy_indexing_copy(write_log_fn)
 end
 
 function test_scalar_view(write_log_fn)
-    A = reshape(collect(0:15), 4, 4)
+    A = reshape(collect(0:8), 3, 3)
 
     # -----------------------------
     # Scalar view
@@ -120,7 +139,7 @@ function test_scalar_view(write_log_fn)
 
     logViewContent("scalar view: ", s,  write_log_fn)
 
-    logViewContent("scalar content: ", s == 6,  write_log_fn)
+    logViewContent("scalar content: ", s == 7,  write_log_fn)
 
     logViewContent("is numeric: ", typeof(s) <: Number,  write_log_fn)
 end
@@ -148,13 +167,15 @@ function test_write_through_view(write_log_fn)
 end
 
 function test_trivial_view(write_log_fn)
-    B = reshape(collect(0:8), 3, 3)
+    A = reshape(collect(0:8), 3, 3)
 
-    v_trivial = @view B[:, :]
+    v = @view A[:, :]
 
-    logViewContent("trivial view: ", v_trivial, write_log_fn)
+    logViewContent("trivial view: ", v, write_log_fn)
 
-    logViewContent("trivial view is parent: ", pointer(v_trivial) == pointer(B), write_log_fn)
+    logViewContent("trivial view is same object: ", v === A , write_log_fn)
+
+    logViewContent("trivial view is parent: ",  v === A || (pointer(v) == pointer(A) && strides(v) == strides(A) && size(v) == size(A)), write_log_fn)
 end
 
 
@@ -174,7 +195,7 @@ function test_shape_and_strides_consistency(write_log_fn)
 end
 
 function test_fancy_indexing_diagonal(write_log_fn)
-    C = reshape(collect(0:11), 3, 4)
+    C = reshape(collect(0:15), 4, 4)
 
     v_fancy_diag = C[[1,2], [3,4]]
 
@@ -198,7 +219,7 @@ function test_nested_view(write_log_fn)
 
     logViewContent("v_nested2 view: ", v_nested2, write_log_fn)
 
-    logViewContent("Nested view does not copy view: ", pointer(v_nested2) == pointer(A), write_log_fn)
+    logViewContent("Nested view does not copy view: ", shares_memory(v_nested2, A), write_log_fn)
 end
 
 function test_mixed_indexing(write_log_fn)
@@ -214,7 +235,7 @@ function test_mixed_indexing(write_log_fn)
     logViewContent("v_mixed size ok: ",  size(v_mixed) == (3, 2), write_log_fn)
 
 
-    logViewContent("v_mixed is not copy: ",  pointer(v_mixed) == pointer(D), write_log_fn)
+    logViewContent("v_mixed is not copy: ",  shares_memory(v_mixed, D), write_log_fn)
 end
 
 # function test_boolean_mask(write_log_fn)
@@ -240,6 +261,7 @@ function run_tests_julia_view(write_log_fn)
     test_write_through_view(write_log_fn)
     test_trivial_view(write_log_fn)
     test_shape_and_strides_consistency(write_log_fn)
+    test_fancy_indexing_diagonal(write_log_fn)
     test_nested_view(write_log_fn)
     test_mixed_indexing(write_log_fn)
    # test_boolean_mask(write_log_fn)
