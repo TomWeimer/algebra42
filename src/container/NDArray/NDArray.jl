@@ -1,8 +1,41 @@
-include("../../iterator/NestedArrayIndices.jl")
+import Base: *, +, -
 
+struct NestedArrayIndices
+    dims::NTuple{N,Int} where N
+end
 
+function Base.iterate(R::NestedArrayIndices, state=ntuple(_ -> 1, length(R.dims)))
+    inds = state
+    N = length(R.dims) # 3
 
-abstract type AbstractNDArray{DType, N} <: AbstractArray{DType,N} end
+    # stop condition
+    if inds === nothing # (1, 1, 1)
+        return nothing
+    end
+
+    # prepare next state
+    next = collect(inds) # [1, 1, 1]
+
+    if next[end-1] < R.dims[end-1]
+        next[end-1] += 1
+        return (CartesianIndex(inds), Tuple(next)) 
+    elseif (next[end] < R.dims[end])
+        next[end-1] = 1
+        next[end] += 1
+        return (CartesianIndex(inds), Tuple(next)) 
+    end
+
+    for d in N:-1:1   # rightmost first
+        if next[d] < R.dims[d]
+            next[d] += 1
+            return (CartesianIndex(inds), Tuple(next))
+        else
+            next[d] = 1
+        end
+    end
+    return (CartesianIndex(inds), nothing)
+end
+
 
 """
    NDArray{DType,N}
@@ -23,340 +56,412 @@ mutable struct NDArray{DType,N} <: AbstractNDArray{DType,N}
    NDArray(content::AbstractArray{T}, shape::Shape{N}, strides) where {T,N} = new{T, N}(content, shape, strides)
 end
 
-# Constructors:
-# -------------------
+const NestedArray{T} = AbstractArray{T, 1} # can also be single dimension array
 
-# scalar 
-NDArray{T}(scalar::Number) where {T} = _init(scalar, T)
+# --------------------------------------------------------------------------------------------- #
+#                                                                                               #
+#                                      Constructors:                                            #
+#                                                                                               #
+# --------------------------------------------------------------------------------------------- #
 
-# ragged array
-NDArray{Any}(data::Collection) = _init(data, Shape(data, dtype=Any), Any)
+# Scalar
+NDArray{T}(x::Number) where {T} = (
+   _init(x, T)
+)
 
-# array
-NDArray{T}(data::Collection) where {T} = _init(data, Shape(data), T)
+# Regular nested array
+NDArray{T}(data::NestedArray{U}) where {T, U} = (
+    _init(data, Shape(data), T)
+)
 
-# matrix
-NDArray{DType}(data::AbstractArray{T, N}) where {DType, T, N} = _init(data, Shape(size(data)), DType)
+# Ragged nested array
+NDArray{Any}(data::NestedArray{T}) where {T} = (
+    _init(data, Shape(data; dtype=Any), Any)
+)
 
-# Uninitialized constructors from shape:
+# From multidimensional array
+NDArray{T}(data::AbstractArray{U, N}) where {T, U, N} = (
+    _init(data, Shape(size(data)), T)
+)
 
-NDArray{DType}(shape::Tuple) where {DType} = NDArray{DType}(Shape(shape))
+# From shape (tuple)
+NDArray{T}(shape::Tuple) where {T} = (
+    NDArray{T}(Shape(shape))
+)
 
-NDArray{DType}(shape::Shape{N}) where {DType, N} = NDArray( Array{DType}(undef, shape.length), shape, _compute_strides(shape) )
+# From shape object
+NDArray{T}(shape::Shape{N}) where {T, N} = (
+    NDArray(Array{T}(undef, shape.length), shape, compute_strides(shape))
+)
 
+# --------------------------------------------------------------------------------------------- #
+#                                                                                               #
+#                                          _init:                                               #
+#                                                                                               #
+# --------------------------------------------------------------------------------------------- #
 
-# Create a ndarray from range
-function reshape(range::AbstractRange{T}, shape::NTuple{N})  where {T, N}
-    length(range) == prod(shape) || throw(ArgumentError("Can't resize the range with the shape given"))
-    ndarray = NDArray{T}(shape)
-    for (i, val) in enumerate(range)
-      ndarray[i] = val 
-   end
-   return ndarray
-end
+# Scalar
+_init(x::Number, T::Type) = (
+    _init(fill(T(x)), Shape(x))
+)
 
-function Base.strides(A::NDArray{T, N}) where {T,N}
-   return A.strides
-end
+# Array with explicit type and shape
+_init(data::AbstractArray{U}, shape::Shape{N}, T::Type, strides=compute_strides(shape)) where {U, N} = (
+    _init(_fill(data, shape, strides, T), shape, strides)
+)
 
-# Functions:
-# ----------
+# Generic catch-all
+_init(content::AbstractArray{T}, shape::Shape{N}, strides=compute_strides(shape)) where {T, N} = (
+    println("content is now: ", content, " shape is: ", shape);
+    NDArray(content, shape, strides)
+)
 
-"""
-    flatten(array::NDArray{DType,N})
+# --------------------------------------------------------------------------------------------- #
+#                                                                                               #
+#                                         _fill:                                                #
+#                                                                                               #
+# --------------------------------------------------------------------------------------------- #
 
-Returns the underlying content of the NDArray as a flat array.
-"""
-flatten(array::NDArray{DType,N}) where {DType,N} = array.content
-
-"""
-    item(a::NDArray, idx...)
-
-Accesses an element of the NDArray using the provided indices.
-For scalars, only empty indices are allowed.
-"""
-item(a::NDArray{DType,0}, idx::Vararg{Int}) where {DType} = isempty(idx) ? _getElement(a, 1) : throw(DomainError("Scalar NDArray does not accept indices"))
-
-item(a::NDArray{DType}, idx::Vararg{Int,1}) where {DType} = isempty(idx) ? _getElement(a, 1) : _getElement(a, idx[1])
-
-
-
-# Base functions (overloaded):
-# ----------------------------
-
-
-# Getter:
-
-Base.size(array::NDArray) = array.shape.dims
-
-Base.ndims(array::NDArray) = ndims(array.shape)
-
-Base.length(array::NDArray) = array.shape.length
-
-Base.eltype(A::NDArray{T}) where {T} = T
-
-Base.pointer(A::NDArray{T}) where T = pointer(A.content)
-
-function Base.stride(A::NDArray{T, N}, k::Integer) where {T,N}
-   (1 <= k <= N) || throw(ArgumentError("The index k is out of bounds"))
-   return A.strides[k]
-end
-
-# Setter:
-
-Base.setindex!(a::NDArray{DType,0}, val::DType, ::Tuple{}) where {DType} = _setElement!(a, 1, val)
-
-Base.setindex!(a::NDArray{DType}, val::DType, indices::Vararg{Int}) where {DType} = _setElement!(a, _getIndex(a, indices), val)
-
-Base.setindex!(a::NDArray{DType,N}, val::DType, index::CartesianIndex) where {DType,N} = _setElement!(a, _getIndex(a, Tuple(index)), val)
-
-# Iteration:
-
-Base.iterate(::NDArray{DType,0}) where {DType} = throw(DomainError("Cannot iterate on a scalar"))
-
-Base.iterate(ndarray::NDArray{DType,N}) where {DType,N} = isempty(ndarray.content) ? nothing : (ndarray.content[1], 2)
-
-Base.iterate(ndarray::NDArray{DType,N}, state::Int) where {DType,N} = state > length(ndarray.content) ? nothing : (ndarray.content[state], state + 1)
-
-# Similar:
-function Base.similar(A::NDArray{T}) where {T}
-    NDArray{T}(size(A))  # create a new NDArray of same size
-end
-
-function Base.similar(A::NDArray, ::Type{T}) where {T}
-    NDArray{T}(size(A))
-end
-
-function Base.similar(A::NDArray{T}, dims::Tuple{Vararg{Int}}) where {T}
-    NDArray{T}(dims)
-end
-
-# Copy:
-
-function Base.copy(a::NDArray)
-   dest = similar(a)
-   copy!(dest, a)
-   return dest
-end
-
-function Base.copy!(dest::NDArray, a::NDArray)
-   for (i, val) in enumerate(a)
-      dest[i] = val
-   end
-end
-
-# View:
-
-function Base.view(array::NDArray{DType,N}, inds...) where {DType,N}
-   # The key is to first get the linear indices that correspond to the multidimensional slice.
-   linear_indices = LinearIndices(array.shape.dims)[inds...]
-
-   return view(array.content, linear_indices)
-end
-
-# Property:
-
-function Base.getproperty(a::NDArray, s::Symbol)
-   if s === :item
-      return (index::Vararg{Int}) -> item(a, index)   # return a callable function
-   else
-      return getfield(a, s)  # default behavior
-   end
-end
-
-
-# Parent:
-
-Base.parent(arr::NDArray) = arr
-
-
-# Internal functions:
-# ------------------
-
-
-"""
-    _init(data, ...)
-
-This internal function acts as a unified factory for creating `NDArray` instances from a
-variety of starting data types. Using multiple dispatch, it funnels all inputs
-(whether a scalar or an array) through a series of steps to ensure the final
-object is correctly constructed with its content, shape, and strides.
-"""
-_init(scalar::Number, T::Type) = _init( fill( T(scalar) ), Shape(scalar) )
-
-# array
-_init(data::AbstractArray{U}, shape::Shape{N}, T::Type, strides=_compute_strides(shape))  where {U, N} = _init( _fill(data, shape, strides, T), shape, strides )
-
-# all 
-_init(content::AbstractArray{T}, shape::Shape{N}, strides=_compute_strides(shape)) where {T, N} = NDArray(content, shape, strides)
-
-
-"""
-    _compute_strides(shape::Shape)
-
-Computes the strides for the given shape, used for efficient indexing.
-"""
-_compute_strides(shape::Shape) = _compute_strides(shape.dims)
-
-function _compute_strides(dims::Tuple)
-   dim = length(dims) == 0 ? 1 : length(dims)
-   strds = zeros(Int, dim)
-   # The stride for the first dimension is always 1
-   strds[1] = 1
-   # For subsequent dimensions, stride[i] = stride[i-1] * size[i-1]
-   for i in 2:dim
-      strds[i] = strds[i-1] * dims[i-1]
-   end
-   return Tuple(strds)
-end
-
-
-"""
-    _fill(data, shape, strides, dtype)
-
-Internal function to fill the NDArray content from the provided data.
-Handles regular arrays, ragged arrays, and nested arrays.
-"""
-function _fill(data::AbstractArray{T,N}, shape::Shape{N}, strides::Tuple{Vararg{Int}}, dtype::Type) where {T,N}
-   content = Array{dtype, 1}(undef, shape.length)
-   
+# Fill using multidimentional array
+function _fill(data::AbstractArray{T,N}, shape::Shape{N}, ::Tuple{Vararg{Int}}, dtype::Type) where {T,N}
+   println("length: ", length(shape), "shape: ", shape.dims, "data shape: ", size(data), "data length: ", length(data))
+    content = Array{dtype, 1}(undef, shape.length)
    for (i, val) in enumerate(data)
       content[i] = dtype(val)
    end
-   
+   println("content: ", content)
    return content
 end
 
-# Fill the content from nested array
-_fill(d::Collection{U}, s::Shape{N}, st::Tuple{Vararg{Int}}, dt::Type) where {U, N} =
-   (dt == Any) ? _fill_ragged_array(d, s,st, dt) : (N >= 3) ? _fill_from_nested_indices(d, s, st, dt) : _fill_from_offset(d, s, st, dt)
-
-function _fill_ragged_array(data::Collection{U}, shape::Shape{N}, strides::Tuple{Vararg{Int}}, dtype::Type) where {U,N}
-   content = Array{dtype, 1}(undef, shape.length)
-
-   for i in 1:shape.length
-      content[i] = data[i]
-   end
-   return content
+function _fill(data::NestedArray{U}, shape::Shape{N}, strides::Tuple{Vararg{Int}}, dtype::Type) where {U,N}
+    if dtype === Any
+        return _fill_ragged_array(data, shape, strides, dtype)
+    end
+    return N ≥ 3 ? _fill_from_nested_indices(data, shape, strides, dtype) :  _fill_from_offset(data, shape, strides, dtype)
 end
 
-function _fill_from_offset(data::Collection{U}, shape::Shape{N}, strides::Tuple{Vararg{Int}}, dtype::Type) where {U,N}
-   content = Array{dtype, 1}(undef, shape.length)
-
-   for idx in CartesianIndices( size(shape) )
-      content[_offset(strides, shape, idx)] = dtype( _get_nested(data, idx) )
-   end
-   return content
+# Fill ragged array
+function _fill_ragged_array(data::NestedArray{U}, shape::Shape{N}, ::Tuple{Vararg{Int}}, dtype::Type) where {U,N}
+    content = similar(data, dtype, shape.length)
+    for i in eachindex(content)
+        content[i] = data[i]
+    end
+    content
 end
 
+# Fill dim 1 and dim 2
+function _fill_from_offset(data::NestedArray{U}, shape::Shape{N}, strides::Tuple{Vararg{Int}}, dtype::Type) where {U,N}
+    content = similar(data, dtype, shape.length)
+    for I in CartesianIndices(size(shape))
+        content[_offset(strides, Tuple(I))] = dtype(_get_nested(data, I))
+    end
+    content
+end
 
-function _fill_from_nested_indices(data::Collection{U}, shape::Shape{N}, strides::Tuple{Vararg{Int}}, dtype::Type) where {U,N}
-   content = Array{dtype, 1}(undef, shape.length)
-   
-   all_index = NestedArrayIndices( size(shape) )
-   for (i, I) in enumerate(all_index)
+# Fill dim 3+
+function _fill_from_nested_indices(data::AbstractArray{U, 1}, shape::Shape{N}, ::Tuple{Vararg{Int}}, dtype::Type) where {U,N}
+   content = similar(data, dtype, shape.length)
+   for (i, I) in enumerate( NestedArrayIndices( size(shape) ) )
       content[i] = dtype( _get_nested(data, I) )
    end
    return content
 end
 
-"""
-    _get_nested(data, I::CartesianIndex)
+_get_nested(data, I::Base.AbstractCartesianIndex) = foldl(getindex, Tuple(I); init=data)
 
-Recursively indexes into nested vectors to retrieve the element at the given Cartesian index.
-"""
-function _get_nested(data, I::CartesianIndex)
-   x = data
-   for i in Tuple(I)
-      x = x[i]
-   end
-   return x
+# --------------------------------------------------------------------------------------------- #
+#                                                                                               #
+#                                       Similar:                                                #
+#                                                                                               #
+# --------------------------------------------------------------------------------------------- #
+
+# Similar: (create array of same size but uninitialized)
+Base.similar(A::AbstractNDArray{T}) where {T} = NDArray{T}(size(A))
+
+Base.similar(A::AbstractNDArray, ::Type{T}) where {T} = NDArray{T}(size(A))
+
+Base.similar(::AbstractNDArray{T}, dims::Tuple{Vararg{Int}}) where {T} = NDArray{T}(dims)
+
+
+# --------------------------------------------------------------------------------------------- #
+#                                                                                               #
+#                                        Other functions :                                      #
+#                                                                                               #
+# --------------------------------------------------------------------------------------------- #
+
+Base.strides(a::NDArray{T, N}) where {T, N}     = a.strides
+
+Base.stride(a::NDArray, k::Integer)     = ( @boundscheck checkindex(Bool, axes(a, k), k); @inbounds a.strides[k])
+
+# Parent:
+flatten(array::NDArray{DType,N}) where {DType,N} = array.content
+
+Base.pointer(A::NDArray{T}) where T = pointer(A.content)
+
+# # Create a ndarray from range
+# function Base.reshape(range::AbstractRange{T}, shape::NTuple{N})  where {T, N}
+#     length(range) == prod(shape) || throw(ArgumentError("Can't resize the range with the shape given"))
+#     ndarray = NDArray{T}(shape)
+#     for (i, val) in enumerate(range)
+#       ndarray[i] = val 
+#    end
+#    return ndarray
+# end
+
+# --------------------------------------------------------------------------------------------- #
+#                                                                                               #
+#                               Implementation AbstractNDArray:                                 #
+#                                                                                               #
+# --------------------------------------------------------------------------------------------- #
+
+Base.IndexStyle(::Type{<:NDArray}) = IndexLinear()
+
+IsContingous(::NDArray) = Val(true)
+
+Base.size(a::NDArray)  = a.shape.dims
+
+Base.axes(a::NDArray) = map(Base.OneTo, a.shape.dims)
+
+Base.parent(a::NDArray) = a
+
+function Base.view(a::NDArray, inds...)
+    println("We want A[$inds] where A is: ")
+    println(a)
+    println("-------------- Creation View (indices: $inds) ---------------- ")
+    # check bounds
+    J = to_indices(a, inds)
+
+    @boundscheck checkbounds(a, J...)
+    
+    # drop dimension
+    J_2 =  drop_singleton_dimension(J, ndims(a))
+    
+    # resize parent if needed
+    reshaped_parent = maybe_reshape_parent(a, Base.index_ndims(J_2...))
+    size_before, size_now = size(a), size(reshaped_parent)
+    println("J: $J")
+    println("J': $J_2")
+
+    # print the content
+    println("content: ", ((size_before != size_now) ? " (reshaped from $size_before to $size_now) " : " " ) * string(reshaped_parent) )
+
+    println("params: reshaped_parent: ndimsA: $(ndims(a)) $reshaped_parent, index_ndims: $(Base.index_ndims(J_2...))")
+    # create the view
+    V =  create_view(reshaped_parent, J_2...)
+
+    println("firstindex: ", firstindex(V))
+    println("lastindex: ", lastindex(V))
+    println("offset1: ", V.offset1)
+    println("axes: ", axes(V))
+    println("indexStyle: ", IndexStyle(V))
+     println("------------------------------------------------------------------------- \n\n")
+    return V
 end
 
-"""
-    _offset(ndarray::NDArray, indices...)
 
-Computes the flat index in the underlying content array from multi-dimensional indices.
-"""
-function _offset(ndarray::NDArray, indices::Vararg{Int})::Int
-   offset = 0
-   for i in 1:ndims(ndarray)
-      offset += (indices[i] - 1) * ndarray.strides[i]
-   end
-   return offset + 1
+# Get and set elements:
+# ---------------------
+
+# Scalar:
+# -------
+
+@propagate_inbounds _getElement(a::NDArray{T, 0}) where {T} = (
+   a.content[1]
+)
+
+@propagate_inbounds _setElement!(a::NDArray{T, 0}, val::T) where {T} = (
+   a.content[1] = val
+)
+
+# Linear index:
+# ------------
+
+@propagate_inbounds _getElement(a::NDArray{T, N}, i::Int) where {T, N} = (
+   a.content[i]
+)
+
+@propagate_inbounds _setElement!(a::NDArray{T, N}, val::T, i::Int) where {T, N} = (
+   a.content[i] = val
+)
+
+# Cartesian index:
+# ---------------
+
+@propagate_inbounds _getElement(a::NDArray{T, N}, I::Base.AbstractCartesianIndex{N}) where {T, N} = (
+    println("index obtained: ", I, " index returned: ", (offset(a, I)));
+    a.content[ offset(a, I) ]
+)
+
+@propagate_inbounds _setElement!(a::NDArray{T, N}, val::T, I::Base.AbstractCartesianIndex{N}) where {T, N} = (
+    println("index obtained: ", I, " index returned: ", (offset(a, I)));
+    a.content[ offset(a, I) ] = val
+)
+
+# 'Normal' index:
+# ---------------
+
+@propagate_inbounds _getElement(a::NDArray{T, N}, indices::NTuple{N, Any}) where {T, N} = ( 
+   a.content[ offset(a, indices) ] 
+)
+
+@propagate_inbounds _setElement!(a::NDArray{T, N}, val::T, indices::NTuple{N, Any}) where {T, N} = (
+   a.content[ offset(a, indices) ] = val
+)
+
+
+# --------------------------------------------------------------------------------------------- #
+#                                                                                               #
+#                                        Math operator Overload :                               #
+#                                                                                               #
+# --------------------------------------------------------------------------------------------- #
+
+# The content of this file permits to use the broadcast syntax suxh as v .+= λ .* v
+
+# We create a new broadcast style and we assign it to our type
+struct NDArrayStyle <: Base.BroadcastStyle end
+
+Base.Broadcast.BroadcastStyle(::Type{<:NDArray}) = NDArrayStyle()
+
+Base.similar(bc::Base.Broadcast.Broadcasted{NDArrayStyle}, ::Type{ElType}) where {ElType} = begin
+   # T = Base.Broadcast.broadcasted_eltype(bc)
+    axes_bc = Base.Broadcast.axes(bc)
+    dims = tuple(length.(axes_bc)...) 
+
+    dest = NDArray{ElType}(dims)
+    return dest
 end
 
-# Obtain the index ( flat index ) from cartesian index
-function _offset(ndarray::NDArray, I::CartesianIndex)::Int
-   idx_tuple = Tuple(I)
-   offset = 0
-   for i in 1:ndims(ndarray)
-      offset += (idx_tuple[i] - 1) * ndarray.strides[i]  # subtract 1 because Julia indices are 1-based
-   end
-   return offset + 1
+# Copy data from a Broadcasted object to a destination MyVector
+function Base.Broadcast.copy!(dest::NDArray, bc::Broadcast.Broadcasted{NDArrayStyle})
+    for (i, val) in enumerate(bc)
+        dest[i] = val
+    end
+    return dest
 end
 
 
-# Obtain the index ( flat index ) from cartesian index
-function _offset(strides::Tuple{Vararg{Int}}, shape::Shape{N}, I::CartesianIndex)::Int where {N}
-   idx_tuple = Tuple(I)
-   offset = 0
-   for i in 1:ndims(shape)
-      offset += (idx_tuple[i] - 1) * strides[i]  # subtract 1 because Julia indices are 1-based
-   end
-   return offset + 1
+Base.BroadcastStyle(::NDArrayStyle, ::NDArrayStyle) = NDArrayStyle()
+Base.BroadcastStyle(::NDArrayStyle, ::Base.Broadcast.DefaultArrayStyle) = NDArrayStyle()
+Base.BroadcastStyle(::Base.Broadcast.DefaultArrayStyle, ::NDArrayStyle) = NDArrayStyle()
+
+
+# --- Addition ---
++(a::NDArray, b::NDArray) = add(a, b)
++(a::Number, b::NDArray) = +(b, a)
++(a::NDArray, b::Number) = add(a, b)
+
+# --- Subtraction ---
+-(a::NDArray, b::NDArray) = sub(a, b)
+-(a::Number, b::NDArray) = -(b, a)
+-(a::NDArray, b::Number) = sub(a, b)
+
+# --- Multiplication scalaire ---
+*(a::NDArray, b::Number) = prod(a, b)
+*(a::Number, b::NDArray) =  *(b, a)
+
+
+
+const Vector{DType} = NDArray{DType, 1}
+
+# scalar 
+Vector{T}(scalar::Number) where {T} = _init(scalar, T)
+
+# array
+Vector{T}(data::Collection) where {T} = _init(data, Shape(data), T)
+
+# matrix
+Vector{DType}(data::AbstractArray{T, 1}) where {DType, T} = _init(data, Shape(size(data)), T)
+
+# Uninitialized constructors from shape:
+
+Vector{DType}(shape::Tuple{Int}) where {DType} = NDArray{DType}(Shape(shape))
+
+Vector{DType}(shape::Shape{1}) where {DType} = NDArray( Array{DType}(undef, shape.length), shape, compute_strides(shape) )
+
+function zeroVector(shape::Tuple, type::Type{T}) where {T}
+    rtn = Vector{type}(shape)
+    fill!(rtn, zero(type))
+    return rtn
 end
 
-"""
-    _getIndex(array::NDArray, indices...)
+const Matrix{DType} = NDArray{DType, 2}
 
-Validates and computes the flat index for element access.
-Throws an error for invalid indices.
-"""
-function _getIndex(array::NDArray, indices::Tuple{Vararg{Int}})
-   index = _offset(array, indices...)
-   (isempty(indices) && N != 0  ) && throw(DomainError("Can access only a[()] if it is a scalar"))
-   _isValidIndex(array.shape, index) || throw(DomainError("Invalid index when a[i] = ..."))
-   return index
-end
+# scalar 
+Matrix{T}(scalar::Number) where {T} = _init(scalar, T)
 
-function _getIndex(array::NDArray, indices::Tuple{Int})
-  # println("array: ", array.content, " index obtained: ", index)
-   _isValidIndex(array.shape, indices[1]) || throw(DomainError("Invalid index when a[i] = ..."))
-   return indices[1]
-end
+# array
+Matrix{T}(data::Collection) where {T} = _init(data, Shape(data), T)
 
-function _getIndex(array::NDArray, index::Int)
-  # println("array: ", array.content, " index obtained: ", index)
-   _isValidIndex(array.shape, index) || throw(DomainError("Invalid index when a[i] = ..."))
-   return index
+# matrix
+Matrix{DType}(data::AbstractArray{T, 2}) where {DType, T} = _init(data, Shape(size(data)), DType)
+
+# Uninitialized constructors from shape:
+Matrix{DType}(shape::Tuple) where {DType} = NDArray{DType}(Shape(shape))
+
+Matrix{DType}(shape::Shape{2}) where {DType} = NDArray( Array{DType, 2}(undef, shape.length), shape, compute_strides(shape) )
+
+function zeroMatrix(shape::Tuple, type::Type{T}) where {T}
+    rtn = Matrix{type}(shape)
+    fill!(rtn, zero(type))
+    return rtn
 end
 
 
+function Base.hcat(A::Matrix{T}, B::Matrix{T}) where {T}
+    
+    size(A, 1) == size(B, 1) || throw(ArgumentError("Those matrix have not the same height"))
 
-"""
-    _getElement(a::NDArray, index::Int)
+    shape = ( size(A, 1), size(A, 2) + size(B, 2) )
 
-Returns the element at the given flat index from the NDArray.
-"""
-function _getElement(a::NDArray{DType,N}, index::Int) where {DType,N}
-   a.content[_getIndex(a, index)]
+    dest = Matrix{T}(shape)
+
+    m, n1 = size(A, 1), size(A, 2)
+    
+    for j in 1:shape[2]
+        
+        if (j <= n1)
+            for i in 1:m
+                dest[i, j] = A[i, j]
+            end
+        else
+            for i in 1:m
+                dest[i, j] = B[i, j - n1]
+            end
+        end
+    end
+    return dest
 end
 
-"""
-    _setElement!(a::NDArray, index::Int, val)
+function Base.vcat(A::Matrix{T}, B::Matrix{T}) where {T}
+    
+    size(A, 2) == size(B, 2) || throw(ArgumentError("Those matrix have not the same height"))
 
-Sets the element at the given flat index to the provided value.
-"""
-function _setElement!(a::NDArray{DType,N}, index::Int, val) where {DType,N}
-   a.content[index] = DType(val)
+    shape = ( size(A, 1) + size(B, 1), size(A, 2) )
+
+    dest = Matrix{T}(shape)
+
+    m1 = size(A, 1)
+    
+    for j in 1:shape[2]
+        for i in 1:shape[1]
+            dest[i, j] = (i <= m1) ? A[i, j] : B[i - m1, j]
+        end
+    end
+    return dest
 end
 
-"""
-    _isValidIndex(shape::Shape, index::Int)
 
-Checks if the flat index is within bounds for the given shape.
-"""
-_isValidIndex(shape::Shape, index::Int) = 1 <= index <= shape.length
+function isSquare(A::Matrix)
+    return size(A, 1) == size(A, 2)
+end
 
-_isValidIndex(shape::Shape, indices::Vararg{Union{AbstractRange, Int, Colon}}) = all((t) -> t[1] isa Colon || t[1] isa AbstractRange && 1 <= first(t[1]) <= last(t[1]) <= t[2] || 1 <= t[1] <= t[2], zip(indices, shape.dims))
+function identityMatrix(n, type::Type{T}) where T
+    identity = Matrix{type}((n, n))
+
+    fill!(identity, 0)
+
+    for k in 1:n
+        identity[k, k] = one(T)
+    end
+    return identity
+end

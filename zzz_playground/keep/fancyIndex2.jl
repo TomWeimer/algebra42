@@ -373,7 +373,7 @@
 
 # # Example
 # ```jldoctest
-# nd_array = NDArray(reshape(1:12, 3, 4))
+# nd_array = NDArray(reshape(collect(1:12), 3, 4))
 
 # # Select elements at row 1, column 2 and row 3, column 4
 # subset = fancyIndexing(nd_array, ([1, 3], [2, 4]))

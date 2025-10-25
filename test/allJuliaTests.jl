@@ -117,13 +117,16 @@ for (i, file) in enumerate(test_files)
     write_log("created at: [$RUN_TIMESTAMP]")
         filename = basename(file)[1:end-3]
         fn_name = Symbol("run_tests_", filename)
-       
 
+       # try
         include(file)
 
         if @isdefined fn_name
             getfield(Main, fn_name)(write_log)   # pass println as write_log
         end
+ #   catch
+   #     all_passed = false
+   # end
 end
 
 # -------------------- Final summary --------------------

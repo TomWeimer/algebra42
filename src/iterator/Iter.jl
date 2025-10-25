@@ -102,13 +102,19 @@ function _init_iter(ao::NDArray, nd::Integer)
         prod(size(ao)),
         zeros_nd(), zeros_nd(), zeros_nd(), zeros_nd(), zeros_nd(),
         ao,
-        Ref(item(ao, 1)),
+        Ref(getItem(ao, 1)),
         true,
         (zeros_nd(), zeros_nd()),
         (zeros_nd(), zeros_nd()),
         zeros_nd()
     )
 end
+
+getItem(ao::NDArray{T, 0}) where T = ao[]
+
+getItem(ao::NDArray{T, N}) where {T, N} = ao[1]
+
+getItem(ao::NDArray{T, N}, i::Int) where {T, N} = ao[i]
 
 
 # --------------------------------------------------------------------------------------------- #
@@ -155,7 +161,7 @@ function _iter_next!(it::Iter)
 
     # If the array is contiguous in memory, we can just move the pointer
     if it.contiguous
-        it.data_ptr[] = item(it.ao, it.index)  # move pointer by 1 element
+        it.data_ptr[] = getItem(it.ao, it.index)  # move pointer by 1 element
         return it
     end
 
@@ -166,12 +172,12 @@ function _iter_next!(it::Iter)
             # Move forward in this dimension
             it.coordinates[d] += 1
              # Update the data pointer based on the multi-dimensional offset
-            it.data_ptr[] = item(it.ao, _offset(it, nd))
+            it.data_ptr[] = getItem(it.ao, _offset(it, nd))
             break # no need to update higher dimensions
         else
             # Reset this dimension and carry over to the next
             it.coordinates[d] = 1
-            it.data_ptr[] = item(it.ao, _offset(it, nd))
+            it.data_ptr[] = getItem(it.ao, _offset(it, nd))
         end
     end
 

@@ -37,7 +37,9 @@ function testAllLogs()
                 push!(logs, full_log_path)
             end
         end
-        compareAllLogs(testName, logs)
+        if testName != LOG_FOLDER
+            compareAllLogs(testName, logs)
+        end
     end
 end
 

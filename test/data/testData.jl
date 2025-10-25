@@ -53,7 +53,7 @@ testArray(data, expected; total_element, blocks, row, col) = TestDataArray(data,
 
 testArray(data; total_element, blocks, row, col) = TestDataArray(data, total_element, (blocks, row, col), 3)
 
-testArray(expected) = TestDataArray(expected=expected, total_element=Base.prod(size(expected)), shape=size(expected), dim=ndims(expected))
+testArray(expected) = TestDataArray(expected=expected, total_element=prod(size(expected)), shape=size(expected), dim=ndims(expected))
 
 # nd array
 
@@ -63,7 +63,7 @@ testArray(data, dimensions::Vararg{Int}; total_element) = TestDataArray(data, to
 
 function TestDataArray(data, total_element, shape, dim)
 
-    litteral = dim == 1 ? Vector(1:total_element) : reshape(1:total_element, shape...)
+    litteral = dim == 1 ? Vector(1:total_element) : reshape(collect(1:total_element), shape...)
     return TestDataArray(data, litteral, total_element, shape, dim)
 end
 
@@ -170,7 +170,7 @@ array_3D_2 = testArray([
             [21, 24]
         ]], total_element=24, blocks=4, row=3, col=2)
 
-array_4D_1 = testArray(reshape(1:16, 2, 2, 2, 2))
+array_4D_1 = testArray(reshape(collect(1:16), 2, 2, 2, 2))
 
 
 # ragged array

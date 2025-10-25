@@ -1,7 +1,7 @@
 const OrdinalRangeInt = OrdinalRange{Int,Int}
 
 # Span the cartesian space
-struct CartesianIndices_42{N,R<:NTuple{N,OrdinalRangeInt}} <: AbstractArray{CartesianIndex_42{N},N}
+struct CartesianIndices_42{N,R<:NTuple{N,OrdinalRangeInt}} <: AbstractArray{Base.AbstractCartesianIndex{N},N}
     indices::R
 end
 
@@ -17,6 +17,8 @@ CartesianIndices_42_42(::Tuple{}) = CartesianIndices_42_42{0,typeof(())}(())
 # Default constructor
 CartesianIndices_42(inds::NTuple{N,Union{<:Integer,OrdinalRange{<:Integer}}}) where {N} =
     CartesianIndices_42(map(_convert, inds))
+
+CartesianIndices_42(a::AbstractArray) where {N} = CartesianIndices_42(size(a))
 
 # Convert all entries of the tuple to the same basic Int type
 function CartesianIndices_42(inds::NTuple{N,OrdinalRange{<:Integer,<:Integer}}) where {N}
@@ -38,7 +40,9 @@ _convert(sz::OrdinalRange) = first(sz):step(sz):last(sz)
 # --------------------------------------------------------------------------------------------- #
 
 # Julia's map function generally attempts to preserve the "outer" container type of the input collection
-Base.size(iter::CartesianIndices_42)  = map(length, iter.indices) # ->  R <: NTuple{N,OrdinalRangeInt}
+Base.axes(iter::CartesianIndices_42) =  map(d -> axes(d, 1), iter.indices)
+
+Base.size(iter::CartesianIndices_42)  = map(length, axes(iter))
 
 Base.last(iter::CartesianIndices_42)  = CartesianIndex_42(map(last, iter.indices))
 
@@ -87,7 +91,7 @@ function Base.iterate(iter::CartesianIndices_42)
     iterfirst, iterfirst
 end
 
-function Base.iterate(iter::CartesianIndices_42, state::CartesianIndex_42)
+function Base.iterate(iter::CartesianIndices_42, state::Base.AbstractCartesianIndex)
     valid, I = __inc(state.I, iter.indices)
     valid || return nothing
     return CartesianIndex_42(I...), CartesianIndex_42(I...)
@@ -100,10 +104,21 @@ end
 # --------------------------------------------------------------------------------------------- #
 
 # increment & carry
-function inc(state, indices)
-    _, I = __inc(state, indices)
-    return CartesianIndex_42(I...)
+function inc(state::Base.AbstractCartesianIndex{N}, indices::NTuple{N,OrdinalRangeInt}) where {N}
+    valid, I = __inc(state.I, indices)
+    valid || return nothing
+    return typeof(state)(I)
 end
+
+# increment & carry
+function inc(state::Base.AbstractCartesianIndex{N}, shape::NTuple{N,Int}) where {N}
+    indices = map(_convert, shape)
+    valid, I = __inc(state.I, indices)
+    valid || return nothing
+    return typeof(state)(I)
+end
+
+
 
 # This code implements the recursive, column-major iteration for CartesianIndices_42. 
 # By explicitly using a valid::Bool flag instead of returning Union{Nothing, Tuple}, 
@@ -133,11 +148,19 @@ function __inc(state::Tuple{Int,Int,Vararg{Int}}, indices::Tuple{OrdinalRangeInt
     return valid, (first(range), Itail...)
 end
 
+# increment & carry
+function dec(state::Base.AbstractCartesianIndex{N}, indices::NTuple{N,OrdinalRangeInt}) where {N}
+    valid, I = __dec(state.I, indices)
+    valid || return nothing
+    return typeof(state)(I...)
+end
 
-# decrement & carry
-function dec(state, indices)
-    _, I = __dec(state, indices)
-    return CartesianIndex_42(I...)
+# increment & carry
+function dec(state::Base.AbstractCartesianIndex{N}, shape::NTuple{N,Int}) where {N}
+    indices = map(_convert, shape)
+    valid, I = __dec(state.I, indices)
+    valid || return nothing
+    return typeof(state)(I...)
 end
 
 #  Base Case (Empty Tuple) -> return invalid/overflow
@@ -163,14 +186,14 @@ function __dec(state::Tuple{Int,Int,Vararg{Int}}, indices::Tuple{OrdinalRangeInt
 end
 
 
- function show(io::IO, iter::CartesianIndices_42)
+ function Base.show(io::IO, iter::CartesianIndices_42)
         print(io, "Algebra42.CartesianIndices_42(")
         show(io, map(_form_index, iter.indices))
         print(io, ")")
     end
     _form_index(i) = i
     _form_index(i::Base.OneTo) = i.stop
-    show(io::IO, ::MIME"text/plain", iter::CartesianIndices_42) = show(io, iter)
+    Base.show(io::IO, ::MIME"text/plain", iter::CartesianIndices_42) = show(io, iter)
 
 
     # Not same size ( Cartesian Indices )

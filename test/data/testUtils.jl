@@ -133,6 +133,7 @@ function compareByIndex(ndarray, expected)
     ranges = ntuple(i -> 1:size(ndarray)[i], ndims(ndarray))
 
     for indices in Iterators.product(ranges...)
+           println("index used: ", indices)
         if (ndarray[indices...] != expected[indices...])
             println("Comparison byIndex failed at index: ", indices)
             println(" Original was", ndarray)
@@ -185,6 +186,9 @@ function compareBySlices(ndarray, expected)
 end
 
 function comparesSlices(ndarray, expected, indices)
+    println("A: $ndarray")
+    println("slices made: A[$(indices)]")
+
     slice_test::SubArray = ndarray[indices...]
     slice_expected::Array = expected[indices...]
 
@@ -218,7 +222,8 @@ function exceptionPassed(f::Function, nb::Int, ExceptionType::Type)
             passed = true
         else
             passed = false
-            println("      Wrong exception, in exception: $(nb)")
+            println("      Wrong exception in exception: $(nb), excepted: $ExceptionType was: $(typeof(e))")
+            rethrow(e)
         end
     end
     return passed
@@ -324,11 +329,10 @@ function logBySlices(array::AbstractArray, write_log_fn::Function)
     write_log_fn("slices:")
 
     for axis in 1:ndims(array)
-
         for idx in CartesianIndices(ntuple(i -> i==axis ? 1 : 1:shape[i], ndims(array)))
-
         slice_idx = Tuple(idx)  # indices for the non-axis dimensions
         full_idx = ntuple(i -> i == axis ? Colon() : slice_idx[i], ndims(array))
+        println("slices made: A[$(full_idx)]")
         contentBySlices *= logSlices(array, full_idx)
         end
 

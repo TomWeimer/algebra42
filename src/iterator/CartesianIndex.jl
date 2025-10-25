@@ -33,7 +33,7 @@ Base.length(::CartesianIndex_42{N}) where {N} = N
 Base.eltype(::Type{T}) where {T<:CartesianIndex_42} = eltype(fieldtype(T, :I))
 
 # print
-function show(io::IO, i::CartesianIndex_42)
+function Base.show(io::IO, i::CartesianIndex_42)
     print(io, "Algebra42.CartesianIndex_42(")
     join(io, i.I, ", ")
     print(io, ")")
@@ -86,20 +86,15 @@ end
 # --------------------------------------------------------------------------------------------- #
 
 # A cartesian index of a single number can be used as a number
-convert(::Type{T}, index::CartesianIndex_42{1}) where {T<:Number} = convert(T, index[1])
+Base.convert(::Type{T}, index::CartesianIndex_42{1}) where {T<:Number} = convert(T, index[1])
 
 # Try to convert the coordinates to a special type
-convert(::Type{T}, index::CartesianIndex_42) where {T<:Tuple} = convert(T, index.I)
+Base.convert(::Type{T}, index::CartesianIndex_42) where {T<:Tuple} = convert(T, index.I)
 
-function Base.getindex(A::AbstractArray, I::Base.AbstractCartesianIndex)
-    # The splat operator (unpacking/deconstructing) '...' is the key.
-    # It converts the AbstractCartesianIndex into a sequence of integer arguments,
-    # which is the standard way to index an array.
-    return Base.getindex(A, I.I...)
-end
+# Define conversion from the standard type to the custom type
+Base.convert(::Type{CartesianIndex_42{N}}, i::Base.CartesianIndex{N}) where {N} = CartesianIndex_42{N}(i.I)
 
-function Base.setindex!(A::AbstractArray, v, I::Base.AbstractCartesianIndex)
-    # The new value 'v' is the second argument.
-    # The splat operator '...' again unpacks the index object I into separate integer arguments.
-    Base.setindex!(A, v, I.I...)
-end
+# Reverse conversion from custom type back to standard type
+Base.convert(::Type{Base.CartesianIndex{N}}, i::CartesianIndex_42{N}) where {N} = Base.CartesianIndex{N}(i.I)
+
+Base.checkbounds(a::AbstractArray, I::CartesianIndex_42) = Base.checkbounds(a, convert(Base.CartesianIndex{length(I)}, I))

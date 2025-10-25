@@ -431,11 +431,13 @@ Compute the transpose of matrix `A`.
 - **Space Complexity:** O(m * n)
 """
 function Base.transpose(A::Matrix)
+    println("doing transpose\n\n of $A")
     A_t = Transpose(A)
-
-    result = similar(A_t)
-    copy!(result, A_t)
-    return result
+    println("transpose: $A_t")
+    println("size: ", size(A_t))
+    println("original: ", A)
+    println("axes: $(axes(A_t)). axes original: $(axes(A))")
+    return copy(A_t)
 end
 
 
@@ -523,6 +525,8 @@ function reduced_row_echelon_form(A::Matrix; tol::Real=1e-10)
 
     # We start with the copy of the matrix
     R = copy(A)
+
+    println("copy before row echelon is: ", R)
     m, n = size(R)
     pivot_row = 1
 
@@ -587,7 +591,6 @@ function det3x3(A::AbstractArray{T,2}) where T
         rows = 2:3
         cols = setdiff(1:3, j)
         minor = isNDArray ? A[rows, cols] : @view A[rows, cols]
-        println("minor: ", minor, "rows: $rows ", " cols: $cols ", " A: $A" )
         det += (-1)^(1 + j) * A[1, j] * det2x2(minor)
     end
     return det
@@ -772,19 +775,22 @@ Applies `broadcast_function` elementwise across multiple arrays with broadcastin
 - Let `k` be the number of input arrays.
 - Complexity is `O(N * k)` for iteration and function evaluation.
 """
-function broadcast(broadcast_function::Function, arrays::Vararg{AbstractArray})
+function broadcast(f::Function, arrays::Vararg{AbstractArray})
     shape = obtain_broadcast_shape(arrays)
+
+    println("broadcast shape: ", shape)
 
     output_array = NDArray{eltype(first(arrays))}(shape)
 
-    multi_iter = MultiIter(arrays...)
-
     # Iterate over broadcasted arrays
-    for (output_idx, vals) in zip(CartesianIndices(shape), multi_iter)
-        output_array[output_idx] = broadcast_function(vals...)
+    for idx in CartesianIndices(shape)
+        vals = ntuple(i -> arrays[i][ broadcast_index(idx, size(arrays[i]))... ], length(arrays) )
+        output_array[idx] = f(vals...)
     end
     return output_array
 end
+
+broadcast_index(idx::CartesianIndex, sizeA::Tuple) = ntuple(d -> sizeA[d] == 1 ? 1 : idx[d], length(sizeA))
 
 function obtain_broadcast_shape(arrays::Tuple{Vararg{Any}})
     padded_shapes = obtain_padded_shapes(arrays)
