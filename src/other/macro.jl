@@ -58,6 +58,10 @@ macro throw_index_error(indices, msg)
     return :(throw(DomainError($(esc(indices)) , $(esc(msg)))))
 end
 
+macro throw_error(exception, msg, args...)
+    return :(throw($(esc(exception))($(esc(msg)), $(esc.(args)...))))
+end
+
 function expand_indices(indices, N)
     ntuple(i -> i <= length(indices) ? indices[i] : Colon(), N)
 end

@@ -1,4 +1,4 @@
-created at: [20251025_205512]
+created at: [20251028_133311]
 
 scalar
 42
@@ -138,82 +138,6 @@ array[4, 3, :] = [12, 24]
 
 
 ragged array
-dim: 1
-total_element: 2
-shape: (2,)
-index: (1): [1, 2], (2): [3, 4, 5], 
-iterator: [1, 2] [3, 4, 5] 
-slices:
-array[:] = [[1, 2], [3, 4, 5]]
-
-
-scalar
-42
-dim: 0
-total_element: 1
-shape: ()
-
-vector
-dim: 1
-total_element: 4
-shape: (4,)
-index: (1): 1, (2): 2, (3): 3, (4): 4, 
-iterator: 1 2 3 4 
-slices:
-array[:] = [1, 2, 3, 4]
-
-
-matrix
-dim: 1
-total_element: 3
-shape: (3,)
-index: (1): 1, (2): 3, (3): 5, 
-iterator: 1 3 5 
-slices:
-array[:] = [1, 3, 5]
-
-
-array3D
-dim: 1
-total_element: 2
-shape: (2,)
-index: (1): 1, (2): 5, 
-iterator: 1 5 
-slices:
-array[:] = [1, 5]
-
-
-emptyArray
-dim: 1
-total_element: 0
-shape: (0,)
-index: 
-iterator: 
-slices:
-array[:] = []
-
-
-columnVector
-dim: 1
-total_element: 1
-shape: (1,)
-index: (1): 1, 
-iterator: 1 
-slices:
-array[:] = [1]
-
-
-rowVector
-dim: 1
-total_element: 3
-shape: (3,)
-index: (1): 1, (2): 2, (3): 3, 
-iterator: 1 2 3 
-slices:
-array[:] = [1, 2, 3]
-
-
-raggedArray
 dim: 1
 total_element: 2
 shape: (2,)

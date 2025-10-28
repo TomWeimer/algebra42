@@ -25,15 +25,16 @@ include("utils/indexUtils.jl")
 include("utils/shapeUtils.jl")
 
 
+
+
+
 include("iterator/CartesianIndex.jl")
-include("iterator/CartesianIndices.jl")
-
-
-
 #include("container/Specials.jl")
 
 # 2.
 include("container/NDArray/AbstractNDArray.jl")
+
+include("iterator/CartesianIndices.jl")
 include("container/views/NDSubArray.jl")
 include("container/views/ReshapeView.jl")
 include("container/NDArray/NDArray.jl")

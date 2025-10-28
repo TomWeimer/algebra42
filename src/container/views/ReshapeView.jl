@@ -42,40 +42,40 @@ Base.similar(A::ReshapedArray42, eltype::Type, dims::Dims) = similar(parent(A), 
 Base.similar(::Type{TA}, dims::Dims) where {T,N,P,TA<:ReshapedArray42{T,N,P}} = similar(P, dims)
 
 
-function Base.view(a::ReshapedArray42{T,N}, inds...) where {T,N}
-    println("We want A[$inds] where A is: ")
-    println(a)
-    println("-------------- Creation View from ReshapedArray42 (indices: $inds) ---------------- ")
-    # check bounds
-  # check bounds
-    J = to_indices(a, inds)
+# function Base.view(a::ReshapedArray42{T,N}, inds...) where {T,N}
+#     println("We want A[$inds] where A is: ")
+#     println(a)
+#     println("-------------- Creation View from ReshapedArray42 (indices: $inds) ---------------- ")
+#     # check bounds
+#   # check bounds
+#     J = to_indices(a, inds)
 
-    @boundscheck checkbounds(a, J...)
+#     @boundscheck checkbounds(a, J...)
     
-    # drop dimension
-    J_2 =  drop_singleton_dimension(J, ndims(a))
+#     # drop dimension
+#     J_2 =  drop_singleton_dimension(J, ndims(a))
     
-    # resize parent if needed
-    reshaped_parent = maybe_reshape_parent(a, Base.index_ndims(J_2...))
-    size_before, size_now = size(a), size(reshaped_parent)
-    println("J: $J")
-    println("J': $J_2")
+#     # resize parent if needed
+#     reshaped_parent = maybe_reshape_parent(a, Base.index_ndims(J_2...))
+#     size_before, size_now = size(a), size(reshaped_parent)
+#     println("J: $J")
+#     println("J': $J_2")
 
-    # print the content
-    println("content: ", ((size_before != size_now) ? " (reshaped from $size_before to $size_now) " : " " ) * string(reshaped_parent) )
+#     # print the content
+#     println("content: ", ((size_before != size_now) ? " (reshaped from $size_before to $size_now) " : " " ) * string(reshaped_parent) )
 
-    println("elements befoer beginning the view: reshaped_parent: ndimsA: $(ndims(a)) $reshaped_parent, index_ndims: $(Base.index_ndims(J_2...))")
-    # create the view
-    V =  create_view(reshaped_parent, J_2...)
-    println("offset1: ", V.offset1)
-    println("firstindex: ", firstindex(V))
-    println("lastindex: ", lastindex(V))
-    println("axes: ", axes(V))
-        println("indexStyle: ", IndexStyle(V))
+#     println("elements befoer beginning the view: reshaped_parent: ndimsA: $(ndims(a)) $reshaped_parent, index_ndims: $(Base.index_ndims(J_2...))")
+#     # create the view
+#     V =  create_view(reshaped_parent, J_2...)
+#     println("offset1: ", V.offset1)
+#     println("firstindex: ", firstindex(V))
+#     println("lastindex: ", lastindex(V))
+#     println("axes: ", axes(V))
+#         println("indexStyle: ", IndexStyle(V))
 
-     println("------------------------------------------------------------------------- \n\n")
-    return V
-end
+#      println("------------------------------------------------------------------------- \n\n")
+#     return V
+# end
 
 function Base.strides(a::ReshapedArray42{DType,N, P}) where {DType,N, P <: AbstractArray{DType, 0}}
     return ntuple(_ -> 1, N)
@@ -643,3 +643,8 @@ end
 
 Base.lastindex(a::ReshapedArray42{T, N}) where {T, N} = last(eachindex(a)).parentindex
 Base.firstindex(a::ReshapedArray42{T, N}) where {T, N} = first(eachindex(a)).parentindex
+
+maybe_reshape_parent(A::AbstractArray, ::NTuple{1, Bool}) = reshape(A, Val(1))
+maybe_reshape_parent(A::AbstractArray{<:Any,1}, ::NTuple{1, Bool}) = reshape(A, Val(1))
+maybe_reshape_parent(A::AbstractArray{<:Any,N}, ::NTuple{N, Bool}) where {N} = A
+maybe_reshape_parent(A::AbstractArray, ::NTuple{N, Bool}) where {N} = reshape(A, Val(N))

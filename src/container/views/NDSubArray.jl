@@ -368,7 +368,7 @@ function NDSubArray(::IndexLinear, parent::P, indices::I, ::NTuple{N,Any}) where
 
     offset = compute_offset1(parent, stride, indices)
 
-    println("previous offset", compute_offset(parent_strides, indices))
+    #println("previous offset", compute_offset(parent_strides, indices))
 
     #println("offset: $offset")
 
@@ -426,7 +426,7 @@ end
 @propagate_inbounds _getIndex(a::NDSubArraySlow{T, 0}) where T = reindex(a.indices, firstindex(a))
 
 # Linear index
-@propagate_inbounds _getIndex(a::NDSubArraySlow{T, N}, i::Int) where {T, N} =  reindex(a.indices, tuple(_linear_to_cartesian(size(a), i)...))
+@propagate_inbounds _getIndex(a::NDSubArraySlow{T, N}, i::Int) where {T, N} =  reindex(a.indices, _linear_to_cartesian(size(a), i))
 
 # Cartesian index
 @propagate_inbounds _getIndex(a::NDSubArraySlow{T, N}, I::Base.AbstractCartesianIndex{N}) where {T, N} = (I = reindex(a.indices, Tuple(I)); println("returned: ", I, " linear: ", to_linear_index(axes(a), Tuple(I))); I )

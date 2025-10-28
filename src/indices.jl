@@ -6,7 +6,7 @@ using .Errors: ERR_CARTESIAN_SETINDEX
 #                                                                                               #
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ #
 
-struct CartesianIndices_42{N,R <: IndicesRange{N}, Order} <: AbstractNDArray{ AllCartesianIndex{N}, N}
+struct CartesianIndices_42{N,R <: IndicesRange{N}, Order} <: AbstractArray{ AllCartesianIndex{N}, N}
     indices::R
 end
 
@@ -15,25 +15,14 @@ const CartesianIndices42C{N, R} = CartesianIndices_42{N,R, ColOrder}
 
 # ======== Constructors ======================================================================= #
 
-# scalar
-CartesianIndices_42(::Tuple{}; order=ColOrder) = CartesianIndices_42{0,typeof(()), order}(())
-
 # Constructor for array
-CartesianIndices_42(a::AbstractArray; order=ColOrder) where {N} = CartesianIndices_42(axes(a); order=order)
-
-# Constructor for shape as cartesian index
-CartesianIndices_42(index::AllCartesianIndex) = CartesianIndices_42(index.I)
+CartesianIndices_42(a::AbstractArray; order=ColOrder) where {N} = CartesianIndices_42(size(a); order=order)
 
 # Constructor for shape tuple
 CartesianIndices_42(inds::NTuple{N, Union{<:Integer, OrdinalRange{<:Integer}} }; order=ColOrder) where N = (
     converted_inds = map(_convert, inds);
     CartesianIndices_42{N, typeof(converted_inds), order}(converted_inds) 
 )
-# Constructor for range(axes) tuple
-function CartesianIndices_42(inds::NTuple{N,OrdinalRange{<:Integer, <:Integer}}) where {N}
-    indices = map(r->convert(OrdinalRangeInt, r), inds)
-    CartesianIndices_42{N, typeof(indices)}(indices)
-end
 
 # ======== Functions to implement AbstractNDArray ============================================= #
 
@@ -49,16 +38,13 @@ Base.IndexStyle(a::CartesianIndices_42)         = IndexCartesian()
 _getElement(a::CartesianIndices_42{0}) = firstindex(a)
 
 # LinearIndices
-_getElement(a::CartesianIndices42C, i::Int) = (println(stderr, "input i: $i, out cind: $(_getElement(a, _linear_to_cartesian(size(a), i)))"); _getElement(a, _linear_to_cartesian(size(a), i)))
-
-# LinearIndices Row major
-_getElement(a::CartesianIndices42R, i::Int) = (println(stderr, "input i: $i, out cind: $(_getElement(a, _linear_to_cartesian_row_major(size(a), i)))"); _getElement(a, _linear_to_cartesian_row_major(size(a), i)))
+_getElement(a::CartesianIndices_42,       i::Int) = _getElement(a, _linear_to_cartesian(size(a), i))
 
 # CartesianIndex
-_getElement(a::CartesianIndices_42{N},  I::AllCartesianIndex{N}) where N = CartesianIndex_42( map((range, i) -> range[i], a.indices, I) )
+_getElement(a::CartesianIndices_42{T, N},  I::AllCartesianIndex{N}) where {T, N} = CartesianIndex_42( map((range, i) -> range[i], a.indices, I) )
 
 # 'Normal' indices
-_getElement(a::CartesianIndices_42{N},  indices::NTuple{N, Any}) where N = CartesianIndex_42( map((range, i) -> range[i], a.indices, indices) )
+_getElement(a::CartesianIndices_42{T, N},  indices::NTuple{N, Any}) where {T, N} = CartesianIndex_42( map((range, i) -> range[i], a.indices, indices) )
 
 # setindex errors
 _setElement!(::CartesianIndices_42{0}, val)                                = @throw_error MethodError ERR_CARTESIAN_SETINDEX
@@ -74,8 +60,6 @@ _setElement!(::CartesianIndices_42, val, indices::NTuple{N, Any}) where N  = @th
 
 Base.eachindex(::IndexCartesian, a::CartesianIndices_42) = a
 
-Base.eachindex(::IndexCartesian, A::AbstractNDArray) = CartesianIndices_42(A)
-
 Base.first(iter::CartesianIndices_42) = CartesianIndex_42(map(first, iter.indices))
 Base.step(iter::CartesianIndices_42)  = CartesianIndex_42(map(step, iter.indices))
 Base.last(iter::CartesianIndices_42)  = CartesianIndex_42(map(last, iter.indices))
@@ -83,12 +67,6 @@ Base.last(iter::CartesianIndices_42)  = CartesianIndex_42(map(last, iter.indices
 
 Base.in(i::CartesianIndex_42{N}, r::CartesianIndices_42)    where N = false # Wrong dimensions
 Base.in(i::CartesianIndex_42{N}, r::CartesianIndices_42{N}) where N = all(map(in, i.I, r.indices))
-
-function Base.getindex(a::CartesianIndices_42{N,R}, I::Vararg{Union{OrdinalRange{<:Integer,<:Integer},Colon},N}) where {N,R}
-    @boundscheck checkbounds(a, I...)
-    indices = map((range, i) ->  @inbounds range[i], a.indices, I)
-    CartesianIndices_42(indices)
-end
 
 #‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾#
 #                                       iteration:                                              #
@@ -120,7 +98,7 @@ end
 
 # from shape tuple
 inc(state::AllCartesianIndex{N}, shape::NTuple{N,Int}; order=ColOrder) where {N} = (
-    inc(state, map(_convert, shape), order=order)
+    inc(state, map(_convert, shape, order = order))
 )
 
 # from range tuple
@@ -182,7 +160,7 @@ end
 
 # from shape tuple
 dec(state::AllCartesianIndex{N}, shape::NTuple{N,Int}; order=ColOrder) where {N} = (
-    dec(state, map(_convert, shape), order = order)
+    dec(state, map(_convert, shape, order = order))
 )
 
 # from range tuple

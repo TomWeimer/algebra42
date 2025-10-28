@@ -173,8 +173,6 @@ end
 
 IndexStyle(::Type{NDArray}) = IndexLinear()
 
-IsContingous(::Type{NDArray}) = Val(true)
-
 size(a::NDArray)   = a.shape.dims
 
 parent(a::NDArray) = a

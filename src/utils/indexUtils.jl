@@ -607,7 +607,7 @@ end
 function parentindex(sizeA, stridesA::NTuple{N, Int}, L::Int, L_start::Int) where {T, N}
     cartesian_indices = _linear_to_cartesian(sizeA, L)
     # L_parent = L_start + indices[i] * strides_View[i]
-    L_parent = _offset(stridesA, tuple(cartesian_indices...); default_offset = L_start)
+    L_parent = _offset(stridesA, cartesian_indices; default_offset = L_start)
     return L_parent
 end
 
@@ -624,7 +624,37 @@ function _linear_to_cartesian(sizeA, L::Int)
         cartesian_indices[d] = i_d + 1
         L_0 = div(L_0, s_d) # division entiere
     end
-    return cartesian_indices
+    return tuple(cartesian_indices...)
+end
+
+function compute_row_major_strides(sizeA::NTuple{N, Int}) where N
+    strds = Array{Int, 1}(undef, max(N, 1))
+    
+    if N != 0
+        strds[N] = 1
+        for i in (N-1):-1:1
+            strds[i] = strds[i+1] * sizeA[i+1]
+        end
+    end
+    return tuple(strds...)
+end
+
+# row-major
+function _linear_to_cartesian_row_major(sizeA, i::Int)
+    i_0 = i - 1
+
+    strides = compute_row_major_strides(sizeA)
+
+    N = length(sizeA)
+
+    cartesian_indices = Array{Int, 1}(undef, N)
+
+    for j in 1:N
+        x = div(i_0, strides[j]) 
+        i_j = Base.mod(x, sizeA[j])
+        cartesian_indices[j] = i_j + 1
+    end
+    return tuple(cartesian_indices...)
 end
 
 

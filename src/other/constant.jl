@@ -13,8 +13,16 @@ const FancyIndices = Union{AbstractArray{Int},AbstractArray{Bool}}
 # Return a copy of the array, if at least one fancy index is present
 const CopyIndices = Union{AbstractRange, Int, Colon, Base.Slice, AbstractArray{Int}, AbstractArray{Bool}}
 
-
+const AllCartesianIndex{N} = Base.AbstractCartesianIndex{N}
 
 # abstract type AbstractNDArray{T, N} <: AbstractArray{T, N} end
+
+
+const OrdinalRangeInt = OrdinalRange{Int,Int}
+
+const IndicesRange{N} = NTuple{N,OrdinalRangeInt}
+
+const ColOrder = 1
+const RowOrder = 2
 
 

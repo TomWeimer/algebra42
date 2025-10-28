@@ -113,7 +113,7 @@ function testScalarNDArray(name, test::TestDataScalar, write_log_fn)
 
     logNDArrayContent(name, array, write_log_fn)
     a = array[:]
-    @assert exceptionPassed(() -> array[2], 1, DomainError)
+    @assert exceptionPassed(() -> array[2], 1, BoundsError)
 
 end
 
@@ -156,6 +156,9 @@ end
 function testBothFormat(data::NDArrayData)
     format1, format2 = NDArray{Int}(data.array), NDArray{Int}(data.matrix)
     passed = size(format1) == size(format2) && compareByIndex(format1, format2)
+    if !(isempty(format1))
+    println(stderr, "first/last format1: $(first(format1)),$(last(format1)), first/last format2 $(first(format2)),$(last(format2))")
+    end
     return passed
 end
 
