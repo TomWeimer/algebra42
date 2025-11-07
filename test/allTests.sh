@@ -43,7 +43,8 @@ for folder in "${TARGET_FOLDERS[@]}"; do
         echo -e "  ${CYAN}→ Clearing ${YELLOW}$folder${RESET}"
         rm -rf "$folder"/*
     else
-        echo -e "  ${RED}✗ Folder '$folder' not found, skipping.${RESET}"
+        echo -e "  ${YELLOW}⚙️  Creating missing folder ${folder}${RESET}"
+        mkdir -p "$folder"
     fi
 done
 
