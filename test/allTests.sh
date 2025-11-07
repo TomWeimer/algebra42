@@ -1,7 +1,6 @@
 #!/bin/bash
 set -e
 
-
 # Get the directory containing this script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -12,6 +11,8 @@ cd "$SCRIPT_DIR" || exit 1
 TARGET_FOLDER1="logs"
 
 TARGET_FOLDER2="diffs"
+
+TARGET_FOLDER3="benchmark"
 
 # Python test script
 NUMPY_TEST="allNumpyTests.py"
@@ -35,7 +36,10 @@ if [ ! -d "$TARGET_FOLDER2" ]; then
     exit 1
 fi
 
-echo "Run timestamp: $RUN_TIMESTAMP"
+if [ ! -d "$TARGET_FOLDER3" ]; then
+    echo "Error: folder '$TARGET_FOLDER3' does not exist."
+    exit 1
+fi
 
 # Clear all files in the folder
 echo "Clearing all files in $TARGET_FOLDER1..."
@@ -44,6 +48,10 @@ rm -rf "$TARGET_FOLDER1"/*
 # Clear all files in the folder
 echo "Clearing all files in $TARGET_FOLDER2..."
 rm -rf "$TARGET_FOLDER2"/*
+
+# Clear all files in the folder
+echo "Clearing all files in $TARGET_FOLDER3..."
+rm -rf "$TARGET_FOLDER3"/*
 
 # Run the Julia test
 echo "Running Julia test..."

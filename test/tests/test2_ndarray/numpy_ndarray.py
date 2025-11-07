@@ -4,39 +4,6 @@ import data.testUtils as utils
 
 import numpy as np
 
-# ---------------------------------------------------------------------------------------------------------------------------------#
-#                                                                                                                                  #
-#                                                  Tests NDArray (shape, content)                                                  #
-#                                                                                                                                  #
-# ---------------------------------------------------------------------------------------------------------------------------------#
-
-
-# scalar
-
-# function testScalarNDArray(name, test::TestDataScalar, write_log_fn)
-#     logNDArrayContent(name, test.data, write_log_fn)
-
-# exceptions = [
-#     (() -> Base.iterate(ndarray), DomainError),
-#     (() -> ndarray[1], DomainError)
-# ]
-
-# @assert allExceptionPassed(exceptions)
-# end
-
-
-# 'ragged' ndarray:
-
-# function testRaggedArray(name, test::NDArrayData, write_log_fn)
-
-#     logNDArrayContent(name, test, write_log_fn)
-
-#     # f1 = () -> x = NDArray{Int}(test.data)
-#     # errorThrown = exceptionPassed(f1, 1, DomainError)
-
-#     # @assert errorThrown
-# end
-
 
 def logNDArrayContent(name, test, write_log_fn: callable):
     write_log_fn("\n" + name)
@@ -57,15 +24,7 @@ def ndarray_test_set1(write_log_fn):
     logNDArrayContent("column", data.column_matrix, write_log_fn)
     logNDArrayContent("array3D 1", data.array_3D_1, write_log_fn)
     logNDArrayContent("array3D 2", data.array_3D_2, write_log_fn)
-    logNDArrayContent("ragged array", data.ragged_array, write_log_fn)
-
-
-# # ---------------------------------------------------------------------------------------------------------------------------------#
-# #                                                                                                                                  #
-# #                                                       Tests NDArray (slices)                                                     #
-# #                                                                                                                                  #
-# # ---------------------------------------------------------------------------------------------------------------------------------#
-
+    logNDArrayContent("raggedArray", data.ragged_array, write_log_fn)
 
 # 'scalar' ndarray
 def testScalarSlices(name, test: data.TestDataScalar, indices, write_log_fn):
@@ -88,13 +47,6 @@ def ndarray_test_set3(write_log_fn):
     )
     testNDArraySlices("rowVector", data.row_matrix, (0, slice(None)), write_log_fn)
     testNDArraySlices("raggedArray", data.ragged_array, (slice(None),), write_log_fn)
-
-
-# # ---------------------------------------------------------------------------------------------------------------------------------#
-# #                                                                                                                                  #
-# #                                                       Tests NDArray (all sets)                                                   #
-# #                                                                                                                                  #
-# # ---------------------------------------------------------------------------------------------------------------------------------#
 
 
 def run_tests(write_log_fn):

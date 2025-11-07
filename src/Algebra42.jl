@@ -6,49 +6,43 @@ A simple library similar to numpy.
 """
 module Algebra42
 
-export Collection
-
-const Collection = Base.Vector
-
-using Infiltrator
-
+using Base: @propagate_inbounds, @inbounds, @boundscheck
 
 # 1. no dep
-include("math/BasicMath.jl")
-include("container/PaddedShape.jl")
-include("other/Errors.jl")
-include("other/macro.jl")
-include("other/constant.jl")
-include("container/Shape.jl")
+include("Math/BasicMath.jl")
+include("Other/Errors.jl")
+include("Other/macro.jl")
+include("Other/constant.jl")
+include("Views/PaddedShape.jl")
 
-include("utils/indexUtils.jl")
-include("utils/shapeUtils.jl")
-
-
-
-
-
-include("iterator/CartesianIndex.jl")
-#include("container/Specials.jl")
+include("Indexing/utils.jl")
 
 # 2.
-include("container/NDArray/AbstractNDArray.jl")
-
-include("iterator/CartesianIndices.jl")
-include("container/views/NDSubArray.jl")
-include("container/views/ReshapeView.jl")
-include("container/NDArray/NDArray.jl")
-
-include("container/Transpose.jl")
+include("Containers/AbstractNDArray.jl")
 
 
-include("iterator/Iter.jl")
-include("iterator/MultiIter.jl")
-include("math/LinearMath.jl")
+include("Indexing/cartesian.jl")
+include("Broadcast/Broadcasted.jl")
+include("Broadcast/MyBroadcast.jl")
+include("Indexing/fancy.jl")
+include("Views/NDSubArray.jl")
+
+
+include("Views/PermutedDimsArray.jl")
+include("Containers/NDArray.jl")
+include("Views/ReshapeView.jl")
+
+
+include("Views/Transpose.jl")
+include("Containers/SpecialArray.jl")
+
+include("Math/LinearMath.jl")
 
 
 
 # Export the functions you want to make publicly available
-export  ReshapedArray42, Shape, ndims, NDArray, OnesArray, ZerosArray, OnesVector, ZerosVector, SingleOneVector, length, size,  nindexes, MultiIter, Iter, add, sub, prod, Vector, Matrix, linear_combination, norm_1, norm, norm_inf, dot, lerp
+export  ReshapedArray42,ndims, NDArray,  length, size, add, sub, prod, Vector, Matrix, 
+linear_combination, norm_1, norm, norm_inf, dot, lerp, @MyBroadcast, 
+materialize42, materialize42!, Broadcasted42
 
 end # module Algebra42

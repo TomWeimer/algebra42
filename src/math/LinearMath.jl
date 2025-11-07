@@ -1,240 +1,76 @@
-# --------------------------------------------------------------------------------------------- #
-#                                                                                               #
-#                                           Symbol:                                             #
-#                                                                                               #
-# --------------------------------------------------------------------------------------------- #
+using .Errors: ERR_IS_NOT_SQUARE
 
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ #
+#                                                                                                  #
+#                                            LinearMath                                            #
+#                                                                                                  #
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ #
+
+
+# ──── Math Symbols ────────────────────────────────────────────────────────────────────────────── #
+
+# Sum
 ∑(arrayToSum) = sum(arrayToSum)
 
-
+# dot product
 ⋅(u::Vector{T}, v::Vector{T}) where {T} = dot(u, v)
 
+# ──── tensor arithmetic ───────────────────────────────────────────────────────────────────────── #
 
-# --------------------------------------------------------------------------------------------- #
-#                                                                                               #
-#                                           Addition:                                           #
-#                                                                                               #
-# --------------------------------------------------------------------------------------------- #
+# +
+add(a::AbstractNDArray, b::AbstractNDArray) = @MyBroadcast a .+ b
+add(a::AbstractNDArray, scalar::Number)     = @MyBroadcast a .+ scalar
 
-"""
-Performs elementwise addition between two `NDArray` objects, following broadcasting rules.
+# -
+sub(a::AbstractNDArray, b::AbstractNDArray) =  @MyBroadcast a .- b
+sub(a::AbstractNDArray, scalar::Number)     =  @MyBroadcast a .- scalar
 
-# Arguments
-- `ndarray1::NDArray`: The first array.
-- `ndarray2::NDArray`: The second array.
+# *
+prod(a::AbstractNDArray, scalar::Number)    = @MyBroadcast a .* scalar
 
-# Returns
-- `NDArray` containing elementwise sums.
+# ══════════════════════════════════════ linear operations ═══════════════════════════════════════ #
+            
+# ──── linear combination ──────────────────────────────────────────────────────────────────────── #
 
-# Complexity
-- `O(N)` where `N` is the total number of elements in the broadcasted shape of the arrays.
-"""
-function add(ndarray1::NDArray, ndarray2::NDArray)
-    return broadcast(add, ndarray1, ndarray2)
+function check_linear_combination(vectors, coefs)
+    length(vectors) == length(coefs) || throw(ArgumentError("vectors and coefficients must match"))
+    all(length(v) == length(vectors[1]) for v in vectors) || throw(
+        ArgumentError("all vectors must have same dimension")
+    )
 end
 
-"""
-Adds a scalar value to each element of the `NDArray`.
-
-# Arguments
-- `ndarray1::NDArray`: The array to which the scalar is added.
-- `scalar::Number`: The scalar value.
-
-# Returns
-- `NDArray` with each element incremented by `scalar`.
-
-# Complexity
-- `O(N)` where `N` is the number of elements in `ndarray1`.
-"""
-function add(ndarray1::NDArray, scalar::Number)
-    return broadcast(add, ndarray1, [scalar])
-end
-
-
-# --------------------------------------------------------------------------------------------- #
-#                                                                                               #
-#                                        Subtraction:                                           #
-#                                                                                               #
-# --------------------------------------------------------------------------------------------- #
-
-"""
-Performs elementwise subtraction between two `NDArray` objects, following broadcasting rules.
-
-# Arguments
-- `ndarray1::NDArray`: The minuend array.
-- `ndarray2::NDArray`: The subtrahend array.
-
-# Returns
-- `NDArray` containing elementwise differences.
-
-# Complexity
-- `O(N)` where `N` is the total number of elements in the broadcasted shape.
-"""
-function sub(ndarray1::NDArray, ndarray2::NDArray)
-    return broadcast(sub, ndarray1, ndarray2)
-end
-
-"""
-Subtracts a scalar from each element of the `NDArray`.
-
-# Arguments
-- `ndarray1::NDArray`: The array from which the scalar is subtracted.
-- `scalar::Number`: The scalar value.
-
-# Returns
-- `NDArray` with each element decremented by `scalar`.
-
-# Complexity
-- `O(N)` where `N` is the number of elements in `ndarray1`.
-"""
-function sub(ndarray1::NDArray, scalar::Number)
-    return broadcast(sub, ndarray1, [scalar])
-end
-
-# --------------------------------------------------------------------------------------------- #
-#                                                                                               #
-#                                       Scalar Product:                                         #
-#                                                                                               #
-# --------------------------------------------------------------------------------------------- #
-
-"""
-Performs elementwise multiplication of an `NDArray` by a scalar.
-
-# Arguments
-- `ndarray1::NDArray`: The array to scale.
-- `scalar::Number`: The scalar multiplier.
-
-# Returns
-- `NDArray` where each element is multiplied by `scalar`.
-
-# Complexity
-- `O(N)` where `N` is the number of elements in `ndarray1`.
-"""
-function prod(ndarray1::NDArray, scalar::Number)
-    return broadcast(prod, ndarray1, [scalar])
-end
-
-# --------------------------------------------------------------------------------------------- #
-#                                                                                               #
-#                                       Linear Combination:                                     #
-#                                                                                               #
-# --------------------------------------------------------------------------------------------- #
-
-
-"""
- Computes the **linear combination** of a set of vectors with given coefficients.
-
-# Arguments
-- `vectors::AbstractVector{Vector{T}}`: A vector of vectors `[v1, v2, ..., vk]` of the same length.
-- `coefs::AbstractVector{T}`: A vector of coefficients `[λ1, λ2, ..., λk]`.
-
-# Returns
-- `Vector{T}` representing the linear combination:
-
-result = λ_1 v_1 + λ_2 v_2 + ... + λ_k v_k
-
-# Requirements
-- All vectors in `vectors` must have the same length.
-- `coefs` must have the same number of elements as `vectors`.
-
-# Complexity
-- Let `k` = number of vectors (`length(vectors)`)  
-- Let `n` = dimension of each vector (`length(vectors[1])`)  
-
-The function iterates over all vectors and multiplies each by its coefficient elementwise.  
-- **Time Complexity:** `O(n * k)`  
-- **Space Complexity:** `O(n)` for the result vector.
-"""
 function linear_combination(vectors::AbstractVector{Vector{T}}, coefs::AbstractVector{T}) where {T}
     n = length(vectors[1])
 
-    check_linear_combination(vectors, coefs, n)
+    check_linear_combination(vectors, coefs)
 
     result = zeroVector((n,), T)
 
-    for (v, λ) in zip(vectors, coefs)
-        result .+= λ .* v
+    @MyBroadcast begin
+        for (v, λ) in zip(vectors, coefs)
+            result .+= λ .* v
+        end
     end
 
     return result
 end
 
-# --------------------------------------------------------------------------------------------- #
-#                                                                                               #
-#                                     Linear Interpolation:                                     #
-#                                                                                               #
-# --------------------------------------------------------------------------------------------- #
+# ──── linear interpolation ────────────────────────────────────────────────────────────────────── #
 
+# scalar
+function lerp(a::Number, b::Number, t::Number)
+    return ((1 - t) * a) + (t * b)
+end
 
-"""
-Computes the **linear interpolation** (lerp) between two arrays element-wise.
-
-# Arguments
-- `u::AbstractArray`: First array.
-- `v::AbstractArray`: Second array (must have the same shape as `u`).
-- `t::Number`: Interpolation factor in `[0, 1]`.  
-
-# Returns
-- An array of the same shape as `u` and `v`:
-result[i] = (1 - t) * u[i] + t * v[i]
-
-# Notes
-- `t = 0` returns `u`.
-- `t = 1` returns `v`.
-- Works for any numeric array type, including `Float64`, `Int`, etc.
-
-# Complexity
-- Let `n` = number of elements in `u` (or `v`).  
-- **Time Complexity:** `O(n)`  
-- **Space Complexity:** `O(n)` for the result array.
-"""
+# vectors
 function lerp(u::V, v::V, t::Number) where {V<:AbstractArray}
-    return (1 - t) .* u .+ t .* v
-end
-
-"""
-Computes the **linear interpolation** between two scalar numbers.
-
-# Arguments
-- `u::Number`: First scalar.
-- `v::Number`: Second scalar.
-- `t::Number`: Interpolation factor in `[0, 1]`.
-
-# Returns
-- A single number:
-text{result} = (1 - t) * u + t * v
-
-# Complexity
-- **Time Complexity:** O(1)  
-- **Space Complexity:** O(1)
-"""
-function lerp(u::V, v::V, t::Number) where {V<:Number}
-    return ((1 - t) * u) + (t * v)
+    A =  @MyBroadcast (1 - t) .* u .+ t .* v
+    return A
 end
 
 
-# --------------------------------------------------------------------------------------------- #
-#                                                                                               #
-#                                     Dot Product:                                              #
-#                                                                                               #
-# --------------------------------------------------------------------------------------------- #
+# ──── dot product ─────────────────────────────────────────────────────────────────────────────── #
 
-"""
-Compute the dot product of two vectors `u` and `v`.
-
-# Arguments
-- `u::Vector{T}`: First vector.
-- `v::Vector{T}`: Second vector (must have same length as `u`).
-
-# Returns
-- Scalar of type `T` representing the dot product:  
-  dot(u, v) = sum_i u[i] * v[i]
-
-# Complexity
-- Let `n = length(u)`  
-- **Time Complexity:** O(n)  
-- **Space Complexity:** O(1)
-"""
 function dot(u::Vector{T}, v::Vector{T}) where {T}
     length(u) == length(v) || throw(DimensionMismatch("Vectors must have the same length"))
     s = zero(T)
@@ -244,12 +80,8 @@ function dot(u::Vector{T}, v::Vector{T}) where {T}
     return s
 end
 
+# ──── norms ───────────────────────────────────────────────────────────────────────────────────── #
 
-# --------------------------------------------------------------------------------------------- #
-#                                                                                               #
-#                                       Norms:                                                  #
-#                                                                                               #
-# --------------------------------------------------------------------------------------------- #
 
 """
 Compute the L1 norm (sum of absolute values) of vector `v`.
@@ -258,7 +90,7 @@ Compute the L1 norm (sum of absolute values) of vector `v`.
 - Time Complexity: O(n)
 - Space Complexity: O(n) for the temporary array from `abs.(v)`
 """
-norm_1(v::Vector{T}) where {T} = ∑(abs.(v))
+norm_1(v::Vector{T}) where {T} = @MyBroadcast ∑(abs.(v))
 
 """
 Compute the L2 (Euclidean) norm of vector `v`.
@@ -267,7 +99,7 @@ Compute the L2 (Euclidean) norm of vector `v`.
 - Time Complexity: O(n)
 - Space Complexity: O(n) for temporary array from `abs.(v) .^ 2`
 """
-norm(v::Vector{T}) where {T} = sqrt(∑(abs.(v) .^ 2))
+norm(v::Vector{T}) where {T} = @MyBroadcast sqrt(∑(abs.(v) .^ 2))
 
 """
 Compute the infinity norm (maximum absolute value) of vector `v`.
@@ -276,14 +108,10 @@ Compute the infinity norm (maximum absolute value) of vector `v`.
 - Time Complexity: O(n)
 - Space Complexity: O(n) for `abs.(v)`
 """
-norm_inf(v::Vector{T}) where {T} = maximum(abs.(v))
+norm_inf(v::Vector{T}) where {T} = @MyBroadcast maximum(abs.(v))
 
 
-# --------------------------------------------------------------------------------------------- #
-#                                                                                               #
-#                                  Angle between vectors:                                       #
-#                                                                                               #
-# --------------------------------------------------------------------------------------------- #
+# ──── angle between vectors ───────────────────────────────────────────────────────────────────── #
 
 """
 Compute the cosine of the angle between two vectors:
@@ -297,13 +125,8 @@ cosθ = u ⋅ v / ( \\|u\\| ⋅ \\|v\\| )
 angle_cos(u::Vector{T}, v::Vector{T}) where {T} = (u ⋅ v) / (norm(u) * norm(v))
 
 
-
-# --------------------------------------------------------------------------------------------- #
-#                                                                                               #
-#                                  Cross Product:                                               #
-#                                                                                               #
-# --------------------------------------------------------------------------------------------- #
-
+# ──── cross product ───────────────────────────────────────────────────────────────────────────── #
+            
 """
 Compute the 3D cross product of vectors `u` and `v`.
 
@@ -330,11 +153,28 @@ function cross_product(u::Vector{T}, v::Vector{T}) where {T}
     return Vector{T}([v1, v2, v3])
 end
 
-# --------------------------------------------------------------------------------------------- #
-#                                                                                               #
-#                                   Matrix: multiplication                                      #
-#                                                                                               #
-# --------------------------------------------------------------------------------------------- #
+# ══════════════════════════════════════ matrix operations ═══════════════════════════════════════ #
+            
+# ──── matrix multiplication ───────────────────────────────────────────────────────────────────── #
+
+function outputShape(u::Vector, v::Vector)
+    n = length(u)
+    n == length(v) || throw(ArgumentError("the shape of the tensor entered are not compatible"))
+    return (n,)
+end
+
+function outputShape(A::Matrix, v::Vector)
+    m, n1, n2 = size(A, 1), size(A, 2), length(v)
+    n1 == n2 || throw(ArgumentError("the shape of the tensor entered are not compatible"))
+    return (m,)
+end
+
+function outputShape(A::Matrix, B::Matrix)
+    m, n1 = size(A, 1), size(A, 2)
+    n2, p = size(B, 1), size(B, 2)
+    n1 == n2 || throw(ArgumentError("the shape of the tensor entered are not compatible"))
+    return (m, p)
+end
 
 
 """
@@ -350,8 +190,10 @@ function mul(A::Matrix{T}, v::Vector{T}) where {T}
 
     result = Vector{T}(shape)
 
-    for i in 1:shape[1]
-        result[i] = ∑(A[i, :] .* v)
+    @MyBroadcast begin
+        for i in 1:shape[1]
+            result[i] = ∑(A[i, :] .* v)
+        end
     end
     return result
 end
@@ -369,21 +211,20 @@ function mul(A::Matrix{T}, B::Matrix{T}) where {T}
 
     result = NDArray{T}(shape)
 
-    for j in 1:shape[2]
-        colB = B[:, j]
-        for i in 1:shape[1]
-            result[i, j] = ∑(A[i, :] .* colB)
+    @MyBroadcast begin
+        for j in 1:shape[2]
+            colB = B[:, j]
+            for i in 1:shape[1]
+                result[i, j] = ∑(A[i, :] .* colB)
+            end
         end
     end
 
     return result
 end
 
-# --------------------------------------------------------------------------------------------- #
-#                                                                                               #
-#                                   Matrix: trace                                               #
-#                                                                                               #
-# --------------------------------------------------------------------------------------------- #
+# ──── trace ───────────────────────────────────────────────────────────────────────────────────── #            
+
 
 """
 Compute the trace of a square matrix `A` (sum of diagonal elements).
@@ -411,14 +252,8 @@ function trace(A::Matrix{T}) where {T}
     return trace
 end
 
-
-
-# --------------------------------------------------------------------------------------------- #
-#                                                                                               #
-#                                   Matrix: transpose                                           #
-#                                                                                               #
-# --------------------------------------------------------------------------------------------- #
-
+# ──── transpose ───────────────────────────────────────────────────────────────────────────────── #
+            
 """
 Compute the transpose of matrix `A`.
 
@@ -431,51 +266,12 @@ Compute the transpose of matrix `A`.
 - **Space Complexity:** O(m * n)
 """
 function Base.transpose(A::Matrix)
-    println("doing transpose\n\n of $A")
     A_t = Transpose(A)
-    println("transpose: $A_t")
-    println("size: ", size(A_t))
-    println("original: ", A)
-    println("axes: $(axes(A_t)). axes original: $(axes(A))")
     return copy(A_t)
 end
 
 
-
-# --------------------------------------------------------------------------------------------- #
-#                                                                                               #
-#                                   Matrix: adjoint                                             #
-#                                                                                               #
-# --------------------------------------------------------------------------------------------- #
-
-"""
-Compute the adjoint (conjugate transpose) of a matrix `A`.
-
-# Returns
-- A new matrix where each element is replaced with its complex conjugate and the matrix is transposed.
-
-# Complexity
-- Let `m, n = size(A)`  
-- **Time Complexity:** O(m * n)  
-- **Space Complexity:** O(m * n)
-"""
-function Base.adjoint(A::Matrix)
-    A_t = Adjoint(A)
-
-    result = similar(A)
-
-    for (i, val) in enumerate(A_t)
-        result[i] = val
-    end
-    return result
-end
-
-
-# --------------------------------------------------------------------------------------------- #
-#                                                                                               #
-#                                   Matrix: reduced row echelon form                            #
-#                                                                                               #
-# --------------------------------------------------------------------------------------------- #
+# ──── reduced row echelon form ────────────────────────────────────────────────────────────────── #
 
 function pivot_selection(R, m, j, pivot_row, tol)
 
@@ -502,7 +298,7 @@ end
 
 function eliminate_row(R, i, j, pivot_row, pivot_value=1)
     factor = R[i, j] / pivot_value
-    R[i, :] .-= R[pivot_row, :] .* factor
+    @MyBroadcast R[i, :] .-= R[pivot_row, :] .* factor
 end
 
 
@@ -526,7 +322,6 @@ function reduced_row_echelon_form(A::Matrix; tol::Real=1e-10)
     # We start with the copy of the matrix
     R = copy(A)
 
-    println("copy before row echelon is: ", R)
     m, n = size(R)
     pivot_row = 1
 
@@ -551,7 +346,7 @@ function reduced_row_echelon_form(A::Matrix; tol::Real=1e-10)
         if (abs(pivot_value) > tol)
 
             # We do  normalize the pivot row because it is done in reduced row echelon form
-            R[pivot_row, :] ./= pivot_value
+            @MyBroadcast R[pivot_row, :] ./= pivot_value
 
             # Elimination: We eliminate all the entries below the pivot
             for i in 1:m
@@ -569,80 +364,65 @@ function reduced_row_echelon_form(A::Matrix; tol::Real=1e-10)
 end
 
 
-# --------------------------------------------------------------------------------------------- #
-#                                                                                               #
-#                                   Matrix: determinant                                         #
-#                                                                                               #
-# --------------------------------------------------------------------------------------------- #
+# ──── determinant ─────────────────────────────────────────────────────────────────────────────── #
 
-function det2x2(A::AbstractArray{T,2}) where T
+function det2x2(A::AbstractMatrix{T}) where T
     size(A) == (2, 2) || throw(ArgumentError("Matrix must be 2x2"))
     return A[1, 1] * A[2, 2] - A[1, 2] * A[2, 1]
 end
 
-function det3x3(A::AbstractArray{T,2}) where T
+function det3x3(A::AbstractMatrix{T}) where T
     size(A) == (3, 3) || throw(ArgumentError("Matrix must be 3x3"))
-
-    isNDArray = A isa NDArray
 
     det = zero(T)
     for j in 1:3
-        # minor = remove first row and column j
         rows = 2:3
         cols = setdiff(1:3, j)
-        minor = isNDArray ? A[rows, cols] : @view A[rows, cols]
+        minor = @view A[rows, cols]
         det += (-1)^(1 + j) * A[1, j] * det2x2(minor)
     end
     return det
 end
 
-function det4x4(A::AbstractArray{T,2}) where T
+function det4x4(A::AbstractMatrix{T}) where T
     size(A) == (4, 4) || throw(ArgumentError("Matrix must be 4x4"))
-
-    isNDArray = A isa NDArray
 
     det = zero(T)
     for j in 1:4
         rows = 2:4
         cols = setdiff(1:4, j)
-        minor = isNDArray ? A[rows, cols] : @view A[rows, cols]
+        minor = @view A[rows, cols]
         det += (-1)^(1 + j) * A[1, j] * det3x3(minor)
     end
     return det
 end
 
-"""
-Compute the determinant of small matrices (2x2, 3x3, 4x4).
+function determinant(A::AbstractMatrix{T}) where T
+    n, m = size(A)
+    n == m || throw(ArgumentError("Matrix must be square"))
 
-# Returns
-- Scalar determinant of type `T`.
-
-# Complexity
-- **2x2:** O(1)  
-- **3x3:** O(1) (explicit cofactor expansion)  
-- **4x4:** O(1)  
-- **Space Complexity:** O(1)
-"""
-function determinant(A::Matrix{T}) where {T}
-    shape = size(A)
-    if shape == (2, 2)
+    if n == 1
+        return A[1,1]
+    elseif n == 2
         return det2x2(A)
-    elseif shape == (3, 3)
+    elseif n == 3
         return det3x3(A)
-    elseif shape == (4, 4)
+    elseif n == 4
         return det4x4(A)
     else
-        throw(ArgumentError("Handle only up to 4x4 Matrix"))
+        det = zero(T)
+        for j in 1:n
+            rows = 2:n
+            cols = setdiff(1:n, j)
+            minor = @view A[rows, cols]
+            det += (-1)^(1 + j) * A[1,j] * determinant(minor)
+        end
+        return det
     end
 end
 
 
-
-# --------------------------------------------------------------------------------------------- #
-#                                                                                               #
-#                                   Matrix: inverse                                             #
-#                                                                                               #
-# --------------------------------------------------------------------------------------------- #
+# ──── inverse ─────────────────────────────────────────────────────────────────────────────────── #
 
 """
 Compute the inverse of a square matrix using RREF on the augmented matrix [A | I].
@@ -660,16 +440,13 @@ Compute the inverse of a square matrix using RREF on the augmented matrix [A | I
 - **Space Complexity:** O(n^2) (augmented matrix copy)
 """
 function inverse(A::Matrix{T}; tol::Real=1e-10) where {T}
-    m, n = size(A)
+    n = size(A, 1)
 
     # 1. Check if the matrix is square
-    if m != n
-        error("Matrix must be square to compute the inverse.")
-    end
+    isSquare(A) || @throw_error ArgumentError ERR_IS_NOT_SQUARE
 
-    # 2. Create the Augmented Matrix [A | I]
-    # 'hcat' concatenates horizontally
-    I_n = identityMatrix(n, T) # Identity matrix I of size n
+    # 2. Create the Augmented Matrix [A | I_n]
+    I_n = IdentityMatrix(n, T)
     Aug = hcat(A, I_n)
 
     # 3. Compute RREF of the Augmented Matrix
@@ -700,29 +477,8 @@ function inverse(A::Matrix{T}; tol::Real=1e-10) where {T}
     return A_inv
 end
 
+# ──── rank ────────────────────────────────────────────────────────────────────────────────────── #            
 
-
-# --------------------------------------------------------------------------------------------- #
-#                                                                                               #
-#                                   Matrix: rank                                                #
-#                                                                                               #
-# --------------------------------------------------------------------------------------------- #
-
-"""
-Compute the rank of a matrix (number of linearly independent rows).
-
-# Arguments
-- `A::Matrix`: Input matrix.
-- `tol::Real`: Tolerance for zero elements.
-
-# Returns
-- Integer rank of the matrix.
-
-# Complexity
-- Let `m, n = size(A)`  
-- **Time Complexity:** O(m * n * min(m, n)) (due to RREF)  
-- **Space Complexity:** O(m * n)
-"""
 function rank(A::Matrix; tol::Real=1e-10)
     # 1. Get the Row Echelon Form (R)
     R = reduced_row_echelon_form(A; tol=tol)
@@ -734,7 +490,7 @@ function rank(A::Matrix; tol::Real=1e-10)
     for i = 1:m
         # Check if any element in the current row (R[i, :]) is non-zero
         # by seeing if its absolute value is greater than the tolerance.
-        is_non_zero_row = any(abs.(R[i, :]) .> tol)
+        @MyBroadcast is_non_zero_row = any(abs.(R[i, :]) .> tol)
 
         if is_non_zero_row
             rank += 1
@@ -748,104 +504,6 @@ function rank(A::Matrix; tol::Real=1e-10)
     return rank
 end
 
-
-# broadcast:
-# ----------
-
-"""
-    broadcast(broadcast_function::Function, arrays::Vararg{AbstractArray})
-
-Applies `broadcast_function` elementwise across multiple arrays with broadcasting support.
-
-# Arguments
-- `broadcast_function::Function`: The function to apply elementwise.
-- `arrays::AbstractArray...`: One or more arrays to broadcast over.
-
-# Returns
-- `NDArray` containing the results of applying `broadcast_function` elementwise to the broadcasted inputs.
-
-# Behavior
-- Automatically computes the broadcasted shape of the input arrays.
-- Creates a `MultiIter` to iterate over all input arrays simultaneously.
-- Applies the function at each broadcasted index.
-- Supports arrays of different shapes that are broadcast-compatible.
-
-# Complexity
-- Let `N` be the total number of elements in the broadcasted output.
-- Let `k` be the number of input arrays.
-- Complexity is `O(N * k)` for iteration and function evaluation.
-"""
-function broadcast(f::Function, arrays::Vararg{AbstractArray})
-    shape = obtain_broadcast_shape(arrays)
-
-    println("broadcast shape: ", shape)
-
-    output_array = NDArray{eltype(first(arrays))}(shape)
-
-    # Iterate over broadcasted arrays
-    for idx in CartesianIndices(shape)
-        vals = ntuple(i -> arrays[i][ broadcast_index(idx, size(arrays[i]))... ], length(arrays) )
-        output_array[idx] = f(vals...)
-    end
-    return output_array
-end
-
-broadcast_index(idx::CartesianIndex, sizeA::Tuple) = ntuple(d -> sizeA[d] == 1 ? 1 : idx[d], length(sizeA))
-
-function obtain_broadcast_shape(arrays::Tuple{Vararg{Any}})
-    padded_shapes = obtain_padded_shapes(arrays)
-
-    maxDim = length(padded_shapes[1])
-
-    output_shape = get_output_shape(padded_shapes, maxDim)
-
-    #@infiltrate
-    broadcast_compatible(output_shape, padded_shapes, maxDim) || throw(DomainError("The indices entered are not compatible for broadcasting"))
-
-    return output_shape
-end
-
-
-function obtain_padded_shapes(arrays::Tuple{Vararg{AbstractArray}})
-    maxDim = 0
-    ref_maxDim = Ref(maxDim)
-    return [PaddedShape(array, ref_maxDim) for array in arrays]
-end
-
-# the padded shapes must all have the same dimensions
-function get_output_shape(padded_shapes::AbstractArray{<:PaddedShape}, maxDim::Int)
-    # obtain the dimensions of the first padded shape == max dimension of all original shapes
-    return ntuple(i -> maximum(ps[i] for ps in padded_shapes), maxDim)
-end
-
-function broadcast_compatible(output_shape::Tuple, padded_shapes::AbstractArray{<:PaddedShape}, maxDim::Int)
-    return all(i -> all(ps[i] == 1 || ps[i] == output_shape[i] for ps in padded_shapes), 1:maxDim)
-end
-
-
-# check functions:
-
-function outputShape(u::Vector, v::Vector)
-    n = length(u)
-    n == length(v) || throw(ArgumentError("the shape of the tensor entered are not compatible"))
-    return (n,)
-end
-
-function outputShape(A::Matrix, v::Vector)
-    m, n1, n2 = size(A, 1), size(A, 2), length(v)
-    n1 == n2 || throw(ArgumentError("the shape of the tensor entered are not compatible"))
-    return (m,)
-end
-
-function outputShape(A::Matrix, B::Matrix)
-    m, n1 = size(A, 1), size(A, 2)
-    n2, p = size(B, 1), size(B, 2)
-    n1 == n2 || throw(ArgumentError("the shape of the tensor entered are not compatible"))
-    return (m, p)
-end
-
-function check_linear_combination(vectors, coefs, n)
-    length(vectors) == length(coefs) || throw(ArgumentError("vectors and coefficients must have the same length"))
-
-    all(length(v) == n for v in vectors) || throw(ArgumentError("all vectors must have the same dimension"))
-end
+# ──── utils ───────────────────────────────────────────────────────────────────────────────────── #
+            
+isSquare(A::AbstractArray) = allequal(size(A))

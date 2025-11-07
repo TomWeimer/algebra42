@@ -79,22 +79,24 @@ end
 # ---------------------------------------------------------------------------------------------------------------------------------#
 
 
-function verifyShape(shape::Shape, expected::ShapeData)
-    if shape.dims != expected.shape
-        println("Shape mismatch: got $(shape.dims), expected $(expected.shape)")
+function verifyShape(shape, expected::ShapeData)
+    if shape != expected.shape
+        println("Shape mismatch: got $(shape), expected $(expected.shape)")
     end
 
-    if shape.length != expected.total_element
-        println("Size mismatch: got $(shape.length), expected $(expected.total_element)")
+    shape_length = shape == () ? 1 : prod(shape)
+
+    if (shape_length != expected.total_element)
+        println("Size mismatch: got $(shape_length), expected $(expected.total_element)")
     end
 
-    if ndims(shape) != expected.dim
-        println("Dim mismatch: got $(ndims(shape)), expected $(expected.dim)")
+    if length(shape) != expected.dim
+        println("Dim mismatch: got $(length(shape)), expected $(expected.dim)")
     end
 
-    return shape.dims == expected.shape &&
-           shape.length == expected.total_element &&
-           ndims(shape) == expected.dim
+    return shape == expected.shape &&
+           shape_length == expected.total_element &&
+           length(shape) == expected.dim
 end
 
 # using test data
@@ -102,15 +104,14 @@ verifyShape(testData::TestDataScalar) = verifyShape(testData.data, testData)
 verifyShape(testData::TestDataArray) = verifyShape(testData.array, testData)
 
 # using data types
-verifyShape(nb::Number, expected::ShapeData) = verifyShape(Shape(nb), expected)
-verifyShape(tuple::Tuple, expected::ShapeData) = verifyShape(Shape(tuple), expected)
-verifyShape(array::AbstractArray, expected::ShapeData) = verifyShape(Shape(array), expected)
+verifyShape(nb::Number, expected::ShapeData) = verifyShape((), expected)
+verifyShape(array::AbstractArray, expected::ShapeData) = verifyShape(size(array), expected)
 
 # using ndarray
-verifyShape(ndarray::NDArray, expected::ShapeData) = verifyShape(ndarray.shape, expected)
+verifyShape(ndarray::NDArray, expected::ShapeData) = verifyShape(size(ndarray), expected)
 
-# using ragged array
-verifyShape(test, expected::ShapeData, dtype) = verifyShape(Shape(test.array; dtype=dtype), expected)
+# using ragged arrays
+verifyShape(test, expected::ShapeData, dtype) = verifyShape(size(test), expected)
 
 function verifyShape(array1, array2)
     return size(array1) == size(array2) && ndims(array1) == ndims(array2)
@@ -133,11 +134,8 @@ function compareByIndex(ndarray, expected)
     ranges = ntuple(i -> 1:size(ndarray)[i], ndims(ndarray))
 
     for indices in Iterators.product(ranges...)
-           println("index used: ", indices)
         if (ndarray[indices...] != expected[indices...])
             println("Comparison byIndex failed at index: ", indices)
-           # println(" Original was", ndarray)
-           # println(" Expected was", expected)
             println("  Expected: ", expected[indices...])
             println("  Got:      ", ndarray[indices...])
             return false
@@ -186,9 +184,6 @@ function compareBySlices(ndarray, expected)
 end
 
 function comparesSlices(ndarray, expected, indices)
-    println("A: $ndarray")
-    println("slices made: A[$(indices)]")
-
     slice_test::SubArray = ndarray[indices...]
     slice_expected::Array = expected[indices...]
 
@@ -281,7 +276,7 @@ end
 
 logShape(ndarray::AbstractArray, write_log_fn::Function) = logShape(ndims(ndarray), Base.prod(size(ndarray)), size(ndarray), write_log_fn)
 
-logShape(ndarray::NDArray, write_log_fn::Function) = logShape(ndims(ndarray), ndarray.shape.length, size(ndarray), write_log_fn)
+logShape(ndarray::NDArray, write_log_fn::Function) = logShape(ndims(ndarray), length(ndarray), size(ndarray), write_log_fn)
 
 logShape(testData::ShapeData, write_log_fn::Function) = logShape(testData.dim, testData.total_element, testData.shape, write_log_fn)
 
@@ -332,7 +327,6 @@ function logBySlices(array::AbstractArray, write_log_fn::Function)
         for idx in CartesianIndices(ntuple(i -> i==axis ? 1 : 1:shape[i], ndims(array)))
         slice_idx = Tuple(idx)  # indices for the non-axis dimensions
         full_idx = ntuple(i -> i == axis ? Colon() : slice_idx[i], ndims(array))
-        println("slices made: A[$(full_idx)]")
         contentBySlices *= logSlices(array, full_idx)
         end
 

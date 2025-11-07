@@ -1,4 +1,4 @@
-created at: [20251028_133311]
+created at: [20251107_014354]
 scalar
  dim: 0, total_element: 1, shape: ()
 empty
@@ -14,6 +14,6 @@ column
 array3D 1
  dim: 3, total_element: 8, shape: (2, 2, 2)
 array3D 2
- dim: 3, total_element: 24, shape: (4, 3, 2)
+ dim: 3, total_element: 24, shape: (3, 2, 4)
 raggedArray
  dim: 1, total_element: 2, shape: (2,)

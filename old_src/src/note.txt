@@ -1,0 +1,34 @@
+
+# 1. Ecriture code
+
+@MyBroadcast
+for (x, y) in A
+    result .+= x .* (y .+ scalar)
+end
+
+# 2. Parsing macro
+
+for (x, y) in A
+    AcummulatedBroadcasted42(+, result, Broadcasted42(*, x, Broadcasted42(+, y, scalar)))
+end
+
+
+# 3. AcummulatedBroadcasted42
+
+AcummulatedBroadcasted42 doit devenir quelquechose comme
+
+for (x, y) in A
+    for i in eachindex(result)
+        result[i] += result[i] + x[i] * (y[i])
+    end
+end
+
+
+
+# Qu'est-ce qu'on a besoin ?
+# IndexStyle working ?
+# Combine eltype marche ?
+# Broadcasted42 inferable ?
+
+# Qu'est-ce qu'on a actuellement ?
+# ???
