@@ -150,7 +150,6 @@ Base.IndexStyle(::NDArray) = IndexLinear()
 @propagate_inbounds _setElement!(a::NDArray{T, N}, val, i::Index) where {T, N} = a.content[i] = val
 
 
-# TODO: check if we can merge them
 # Cartesian index:
 @propagate_inbounds _getElement(a::NDArray{T, N}, I::AllCartesianIndex{N})  where {T, N} = (
     a.content[ LinearIndex(a, I) ]

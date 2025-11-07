@@ -40,16 +40,8 @@ const PACKAGES = [
     "Statistics"
 ]
 
-const RUN_BENCHMARK = false
+const RUN_BENCHMARK = length(ARGS) > 1 && ARGS[2] == "--benchmark"
 
-println("\n🕒 Running Algebra42 tests at $TIMESTAMP\n")
-
-
-
-
-function banner(msg)
-    println("💡 $msg")
-end
 
 
 # ──── variables ───────────────────────────────────────────────────────────────────────────────── #
@@ -204,7 +196,7 @@ end
 "run the different testfiles"
 function runtests(test_files, log_files, bench_files)
     n_tests = length(test_files)
-    println("💡 Running tests ($n_tests total)")
+    println("\n💡 Running tests ($n_tests total)")
 
     for (i, file) in enumerate(test_files)
 

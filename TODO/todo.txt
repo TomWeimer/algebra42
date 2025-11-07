@@ -1,6 +1,0 @@
-1. Changer array method notation comportomenet [1, 2, [1, 3]]
-2. Tester avec float
-3. Implementer complex
-4. Tester nouvelles fonctions
-5. Comparator vitesse
-6. to do rank and and inverse

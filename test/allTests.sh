@@ -1,68 +1,70 @@
 #!/bin/bash
 set -e
 
-# Get the directory containing this script
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ────────────────────────────────────────────────
+# Colors
+# ────────────────────────────────────────────────
+GREEN='\033[1;32m'
+YELLOW='\033[1;33m'
+RED='\033[1;31m'
+BLUE='\033[1;34m'
+CYAN='\033[1;36m'
+RESET='\033[0m'
 
-# Change to that directory
+# ────────────────────────────────────────────────
+# Setup
+# ────────────────────────────────────────────────
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR" || exit 1
 
-# Folders to clear
-TARGET_FOLDER1="logs"
+TARGET_FOLDERS=("logs" "diffs" "benchmark")
 
-TARGET_FOLDER2="diffs"
-
-TARGET_FOLDER3="benchmark"
-
-# Python test script
 NUMPY_TEST="allNumpyTests.py"
-
-# Python test script
 JULIA_TEST="allJuliaTests.jl"
-
-# Python test script
 COMPARE_LOGS="compareLog.jl"
+COMPARE_BENCH="compareBenchmark.jl"
 
-readonly RUN_TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+RUN_TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
-# Safety check: make sure folder exists
-if [ ! -d "$TARGET_FOLDER1" ]; then
-    echo "Error: folder '$TARGET_FOLDER1' does not exist."
-    exit 1
+# Parse command-line flags
+BENCH_FLAG=""
+if [[ "$1" == "--benchmark" ]]; then
+    BENCH_FLAG="--benchmark"
+    echo -e "${YELLOW}🏎️  Benchmark mode enabled${RESET}\n"
 fi
 
-if [ ! -d "$TARGET_FOLDER2" ]; then
-    echo "Error: folder '$TARGET_FOLDER2' does not exist."
-    exit 1
-fi
+# ────────────────────────────────────────────────
+# Clear folders
+# ────────────────────────────────────────────────
+echo -e "${CYAN}🧹 Clearing old test outputs...${RESET}"
 
-if [ ! -d "$TARGET_FOLDER3" ]; then
-    echo "Error: folder '$TARGET_FOLDER3' does not exist."
-    exit 1
-fi
+for folder in "${TARGET_FOLDERS[@]}"; do
+    if [ -d "$folder" ]; then
+        echo -e "  ${CYAN}→ Clearing ${YELLOW}$folder${RESET}"
+        rm -rf "$folder"/*
+    else
+        echo -e "  ${RED}✗ Folder '$folder' not found, skipping.${RESET}"
+    fi
+done
 
-# Clear all files in the folder
-echo "Clearing all files in $TARGET_FOLDER1..."
-rm -rf "$TARGET_FOLDER1"/*
+# ────────────────────────────────────────────────
+# Run tests
+# ────────────────────────────────────────────────
+echo -e "\n${CYAN}🚀 Running Julia tests...${RESET}"
+julia --project=.. "$JULIA_TEST" "$RUN_TIMESTAMP" "$BENCH_FLAG" || { echo -e "${RED}Julia test failed${RESET}"; exit 1; }
 
-# Clear all files in the folder
-echo "Clearing all files in $TARGET_FOLDER2..."
-rm -rf "$TARGET_FOLDER2"/*
+echo -e "\n${CYAN}🐍 Running Python tests...${RESET}"
+python3 "$NUMPY_TEST" "$RUN_TIMESTAMP" > /dev/null 2>&1 || { echo -e "${RED}Python test failed${RESET}"; exit 1; }
 
-# Clear all files in the folder
-echo "Clearing all files in $TARGET_FOLDER3..."
-rm -rf "$TARGET_FOLDER3"/*
+echo -e "\n${CYAN}📊 Comparing results...${RESET}"
+julia --project=.. -q -L "$COMPARE_LOGS" || { echo -e "${RED}Comparison failed${RESET}"; exit 1; }
 
-# Run the Julia test
-echo "Running Julia test..."
-julia --project=.. $JULIA_TEST $RUN_TIMESTAMP || { echo "Julia test failed"; exit 1; }
-
-# Run the Python test
-echo "Running Python test..."
-python3 "$NUMPY_TEST" $RUN_TIMESTAMP > /dev/null 2>&1 || { echo "Python test failed"; exit 1; }
-
-echo "Obtain Results..."
-julia --project=.. -q -L $COMPARE_LOGS || { echo "test results failed"; exit 1; }
-
+# ────────────────────────────────────────────────
 # Done
-echo "Done."
+# ────────────────────────────────────────────────
+echo -e "\n${GREEN}✅ All tests completed successfully!${RESET}"
+
+
+if [[ "$BENCH_FLAG" == "--benchmark" ]]; then
+    julia --project=.. -q -L "$COMPARE_BENCH" || { echo -e "${RED}Comparison failed${RESET}"; exit 1; }
+fi
