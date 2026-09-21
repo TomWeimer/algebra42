@@ -8,7 +8,6 @@ module Algebra42
 
 using Base: @propagate_inbounds, @inbounds, @boundscheck
 
-# 1. no dep
 include("Math/BasicMath.jl")
 include("Other/Errors.jl")
 include("Other/macro.jl")
@@ -17,7 +16,6 @@ include("Views/PaddedShape.jl")
 
 include("Indexing/utils.jl")
 
-# 2.
 include("Containers/AbstractNDArray.jl")
 
 
@@ -38,11 +36,18 @@ include("Containers/SpecialArray.jl")
 
 include("Math/LinearMath.jl")
 
-
-
-# Export the functions you want to make publicly available
 export  ReshapedArray42,ndims, NDArray,  length, size, add, sub, prod, Vector, Matrix, 
 linear_combination, norm_1, norm, norm_inf, dot, lerp, @MyBroadcast, 
-materialize42, materialize42!, Broadcasted42
+materialize42, materialize42!, Broadcasted42,
+reduced_row_echelon_form,
+determinant,
+inverse,
+rank,
+trace,
+mul,
+cross_product,
+angle_cos,
+obtain_broadcast_shape
+
 
 end # module Algebra42
