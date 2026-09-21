@@ -74,7 +74,7 @@ end
 function dot(u::Vector{T}, v::Vector{T}) where {T}
     length(u) == length(v) || throw(DimensionMismatch("Vectors must have the same length"))
     s = zero(T)
-    for i in eachindex(u, v)
+    @inbounds for i in 1:length(u)
         s += u[i] * v[i]
     end
     return s
@@ -90,7 +90,13 @@ Compute the L1 norm (sum of absolute values) of vector `v`.
 - Time Complexity: O(n)
 - Space Complexity: O(n) for the temporary array from `abs.(v)`
 """
-norm_1(v::Vector{T}) where {T} = @MyBroadcast ∑(abs.(v))
+norm_1(v::Vector{T}) where {T}
+    s = zero(real(T))
+    @inbounds for i in 1:length(v)
+        s += abs(v[i])
+    end
+    return s
+end
 
 """
 Compute the L2 (Euclidean) norm of vector `v`.
@@ -99,7 +105,14 @@ Compute the L2 (Euclidean) norm of vector `v`.
 - Time Complexity: O(n)
 - Space Complexity: O(n) for temporary array from `abs.(v) .^ 2`
 """
-norm(v::Vector{T}) where {T} = @MyBroadcast sqrt(∑(abs.(v) .^ 2))
+norm(v::Vector{T}) where {T}
+    s = zero(real(T))
+    @inbounds for i in 1:length(v)
+        x = abs(v[i])
+        s += x * x
+    end
+    return sqrt(s)
+end
 
 """
 Compute the infinity norm (maximum absolute value) of vector `v`.
@@ -108,7 +121,17 @@ Compute the infinity norm (maximum absolute value) of vector `v`.
 - Time Complexity: O(n)
 - Space Complexity: O(n) for `abs.(v)`
 """
-norm_inf(v::Vector{T}) where {T} = @MyBroadcast maximum(abs.(v))
+norm_inf(v::Vector{T}) where {T}
+    isempty(v) && return zero(real(T))
+    m = zero(real(T))
+    @inbounds for i in 1:length(v)
+        a = abs(v[i])
+        if a > m
+            m = a
+        end
+    end
+    return m
+end
 
 
 # ──── angle between vectors ───────────────────────────────────────────────────────────────────── #
@@ -327,15 +350,21 @@ end
 
 function row_switch(R::Matrix, pivot_row, pivot_candidate)
     if pivot_candidate != pivot_row
-        tmp = copy(R[pivot_row, :])
-        R[pivot_row, :] = R[pivot_candidate, :]
-        R[pivot_candidate, :] = tmp
+        n = size(R, 2)
+        @inbounds for c in 1:n
+            tmp = R[pivot_row, c]
+            R[pivot_row, c] = R[pivot_candidate, c]
+            R[pivot_candidate, c] = tmp
+        end
     end
 end
 
 function eliminate_row(R, i, j, pivot_row, pivot_value=1)
     factor = R[i, j] / pivot_value
-    @MyBroadcast R[i, :] .-= R[pivot_row, :] .* factor
+    n = size(R, 2)
+    @inbounds for c in 1:n
+        R[i, c] -= R[pivot_row, c] * factor
+    end
 end
 
 
@@ -358,20 +387,13 @@ function reduced_row_echelon_form(A::Matrix; tol::Real=1e-10)
 
     # We start with the copy of the matrix
     R = copy(A)
-
     m, n = size(R)
     pivot_row = 1
 
     # We iterate through the columns
-    for j in 1:n
-
-        # If the matrix is rectangular we stop early
-        if (pivot_row > m)
-            break
-        end
-
-        # Pivot Selection: We need to select which row contains the pivot
-        pivot_candidate = pivot_selection(R, m, j, pivot_row, tol)
+    @inbounds for j in 1:n
+       # Pivot selection
+       pivot_candidate = pivot_selection(R, m, j, pivot_row, tol))
 
         # Row Switch: We then place the row found below the previous pivot row
         row_switch(R, pivot_row, pivot_candidate)
@@ -383,7 +405,9 @@ function reduced_row_echelon_form(A::Matrix; tol::Real=1e-10)
         if (abs(pivot_value) > tol)
 
             # We do  normalize the pivot row because it is done in reduced row echelon form
-            @MyBroadcast R[pivot_row, :] ./= pivot_value
+            for c in 1:n
+                R[pivot_row, c] /= pivot_value
+            end
 
             # Elimination: We eliminate all the entries below the pivot
             for i in 1:m
@@ -434,28 +458,87 @@ function det4x4(A::AbstractMatrix{T}) where T
     return det
 end
 
-function determinant(A::AbstractMatrix{T}) where T
-    n, m = size(A)
-    n == m || throw(ArgumentError("Matrix must be square"))
 
-    if n == 1
-        return A[1,1]
-    elseif n == 2
-        return det2x2(A)
-    elseif n == 3
-        return det3x3(A)
-    elseif n == 4
-        return det4x4(A)
-    else
-        det = zero(T)
-        for j in 1:n
-            rows = 2:n
-            cols = setdiff(1:n, j)
-            minor = @view A[rows, cols]
-            det += (-1)^(1 + j) * A[1,j] * determinant(minor)
+"""
+Compute the PLU decomposition of a square matrix A such that P * A = L * U.
+# Returns
+- `L`: Unit lower-triangular matrix
+- `U`: Upper-triangular matrix
+- `P`: Permutation indices
+- `sign`: Determinant sign (+1 or -1) from row permutations
+"""
+function lu(A::Matrix{T}) where {T}
+    n = size(A, 1)
+    LU = copy(A)
+    _, sign = lu!(LU)
+    # Unpack L and U from the compact matrix
+    L = NDArray{T}(zeros(T, n, n))
+    U = NDArray{T}(zeros(T, n, n))
+    for i in 1:n
+        L[i, i] = one(T)
+        for j in 1:(i-1)
+            L[i, j] = LU[i, j]
         end
-        return det
+        for j in i:n
+            U[i, j] = LU[i, j]
+        end
     end
+    return L, U, sign
+end
+
+"""
+Compact in-place LU factorization with partial pivoting (LAPACK style).
+Overwrites A: upper triangle is U, lower triangle is L multipliers.
+"""
+@inline function lu!(A::Matrix{T}; tol::Real=1e-10) where {T}
+    n = size(A, 1)
+    sign = 1.0
+    @inbounds for j in 1:n
+        # Pivot selection
+        max_val = abs(A[j, j])
+        max_row = j
+        for k in (j+1):n
+            if abs(A[k, j]) > max_val
+                max_val = abs(A[k, j])
+                max_row = k
+            end
+        end
+        max_val <= tol && continue
+        # Row swap
+        if max_row != j
+            for c in 1:n
+                A[j, c], A[max_row, c] = A[max_row, c], A[j, c]
+            end
+            sign = -sign
+        end
+        # Eliminate and store L multipliers below diagonal
+        pivot = A[j, j]
+        for i in (j+1):n
+            if abs(A[i, j]) > tol
+                factor = A[i, j] / pivot
+                A[i, j] = factor  # Store L multiplier in place!
+                for c in (j+1):n
+                    A[i, c] -= factor * A[j, c]
+                end
+            end
+        end
+    end
+    return A, sign
+end
+
+function determinant(A::AbstractMatrix{T}) where {T}
+    n = size(A, 1)
+    n == size(A, 2) || throw(ArgumentError("Matrix must be square"))
+    n == 1 && return A[1, 1]
+    n == 2 && return det2x2(A)
+    n == 3 && return det3x3(A)
+    LU = copy(A)
+    _, sign = lu!(LU)
+    d = sign
+    @inbounds for i in 1:n
+        d *= LU[i, i]
+    end
+    return d
 end
 
 
