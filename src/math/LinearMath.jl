@@ -187,13 +187,14 @@ Multiply a matrix `A` by a vector `v`.
 """
 function mul(A::Matrix{T}, v::Vector{T}) where {T}
     shape = outputShape(A, v)
-
     result = Vector{T}(shape)
-
-    @MyBroadcast begin
-        for i in 1:shape[1]
-            result[i] = ∑(A[i, :] .* v)
+    k_len = size(A, 2)
+    @inbounds for i in 1:shape[1]
+        s = zero(T)
+        for k in 1:k_len
+            s += A[i, k] * v[k]
         end
+        result[i] = s
     end
     return result
 end
@@ -208,18 +209,54 @@ Multiply two matrices `A` and `B`.
 """
 function mul(A::Matrix{T}, B::Matrix{T}) where {T}
     shape = outputShape(A, B)
-
     result = NDArray{T}(shape)
+    k_len = size(A, 2)
+    @inbounds for j in 1:shape[2]
+        for i in 1:shape[1]
+            s = zero(T)
+            for k in 1:k_len
+                s += A[i, k] * B[k, j]
+            end
+            result[i, j] = s
+        end
+    end
+    return result
+end
 
-    @MyBroadcast begin
-        for j in 1:shape[2]
-            colB = B[:, j]
-            for i in 1:shape[1]
-                result[i, j] = ∑(A[i, :] .* colB)
+
+"""
+Multiply two NDArrays of rank >= 3 (Batch Matrix Multiplication).
+Multiplies matrices along dimensions 1 and 2 across all batch dimensions (3..N).
+# Complexity
+- Let batch_count = prod(size(A)[3:end])
+- Time Complexity: O(batch_count * m * n * k)
+- Space Complexity: O(batch_count * m * n)
+"""
+function mul(A::AbstractNDArray{T, N}, B::AbstractNDArray{T, N}) where {T, N}
+    # 1. Dimension checks
+    size(A, 2) == size(B, 1) || throw(ArgumentError("matrix dimensions are not compatible"))
+    batch_shape = size(A)[3:end]
+    batch_shape == size(B)[3:end] || throw(ArgumentError("batch dimensions must match"))
+            
+    m, p = size(A, 1), size(B, 2)
+    k_len = size(A, 2)
+    out_shape = (m, p, batch_shape...)
+    result = NDArray{T}(out_shape)
+            
+    # 2. Iterate through batch dimensions, computing scalar dot products directly
+    batch_indices = CartesianIndices42(batch_shape)
+    @inbounds for b in batch_indices
+        b_t = Tuple(b)
+        for j in 1:p
+            for i in 1:m
+                s = zero(T)
+                for k in 1:k_len
+                    s += A[i, k, b_t...] * B[k, j, b_t...]
+                end
+                result[i, j, b_t...] = s
             end
         end
     end
-
     return result
 end
 
