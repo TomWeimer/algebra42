@@ -90,7 +90,7 @@ Compute the L1 norm (sum of absolute values) of vector `v`.
 - Time Complexity: O(n)
 - Space Complexity: O(n) for the temporary array from `abs.(v)`
 """
-norm_1(v::Vector{T}) where {T}
+function norm_1(v::Vector{T}) where {T}
     s = zero(real(T))
     @inbounds for i in 1:length(v)
         s += abs(v[i])
@@ -105,7 +105,7 @@ Compute the L2 (Euclidean) norm of vector `v`.
 - Time Complexity: O(n)
 - Space Complexity: O(n) for temporary array from `abs.(v) .^ 2`
 """
-norm(v::Vector{T}) where {T}
+function norm(v::Vector{T}) where {T}
     s = zero(real(T))
     @inbounds for i in 1:length(v)
         x = abs(v[i])
@@ -121,7 +121,7 @@ Compute the infinity norm (maximum absolute value) of vector `v`.
 - Time Complexity: O(n)
 - Space Complexity: O(n) for `abs.(v)`
 """
-norm_inf(v::Vector{T}) where {T}
+function norm_inf(v::Vector{T}) where {T}
     isempty(v) && return zero(real(T))
     m = zero(real(T))
     @inbounds for i in 1:length(v)
@@ -393,7 +393,7 @@ function reduced_row_echelon_form(A::Matrix; tol::Real=1e-10)
     # We iterate through the columns
     @inbounds for j in 1:n
        # Pivot selection
-       pivot_candidate = pivot_selection(R, m, j, pivot_row, tol))
+       pivot_candidate = pivot_selection(R, m, j, pivot_row, tol)
 
         # Row Switch: We then place the row found below the previous pivot row
         row_switch(R, pivot_row, pivot_candidate)
